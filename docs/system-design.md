@@ -82,7 +82,7 @@ Each turn records `t_guard`, `t_context`, `t_engine`, `t_first_token` and `t_tot
 ## 7. Safety and privacy
 
 - No personal data: only nickname, age band, avatar and interests from a fixed list. No names, emails, photos, audio or location.
-- Speech is transcribed in the browser; audio is never uploaded.
+- Speech is transcribed in the browser (on device where supported); Pip never uploads or stores audio.
 - Anonymous device id in an httpOnly, SameSite=Lax cookie. No analytics, ads, trackers or external links in the child area.
 - Strict Content-Security-Policy and other security headers; the LLM key is server-only.
 - The grown-up corner is behind a hold-then-sum gate and a signed 15-minute cookie. Deleting a profile removes every row.
@@ -114,11 +114,12 @@ Route handlers are stateless, so Vercel scales them horizontally. Postgres is re
 ## 11. Trade-offs
 
 - **Rule-based detection over a classifier.** Explainable, instant, testable and works without the LLM. It misses subtle cues, so a cheap after-response mood classification adds a second signal for the next turn.
-- **Web Speech over cloud speech.** Free, private (no audio upload) and zero latency to start. Voice quality and recognition vary by browser, so every action also works by tapping.
+- **Web Speech over cloud speech.** Free and zero latency to start. Pip asks for on-device recognition where the browser supports it; some browsers (for example Chrome without on-device models) still send speech to their own service, so the mic is optional and every action also works by tapping. Pip itself never uploads or stores audio.
 - **LLM for voice only.** Less "creative" conversation, but consistent teaching, safe output and a guaranteed answer under 2 s.
 - **Free-tier LLM (Groq).** Fast and free for a demo, with a rate limit; the adapter makes a paid provider a config change.
 - **Writes after the response.** Skill progress is saved in `after()` so the child never waits, which means two taps within about half a second can overwrite one mastery update. The UI's short card lock makes this rare; a fix would need a blocking write or an atomic increment.
 - **The answer id travels with the cards.** It keeps grading simple; a curious grown-up could read it in the network tab. For 3 to 6 year olds this is an acceptable trade.
+- **CSP allows inline scripts.** Next.js needs inline bootstrap scripts; nonces would make every page dynamic. No third-party scripts are allowed.
 - **Rate limiter fails open.** If Redis is down, Pip keeps talking rather than going silent on a child.
 
 ## 12. Future work

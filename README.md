@@ -27,9 +27,11 @@ From the live URL (see [docs/latency.md](docs/latency.md)):
 
 | Metric | p50 | p95 |
 |---|---|---|
-| First token | _to fill_ | _to fill_ |
-| Full reply | _to fill_ | _to fill_ |
-| Fallback rate | _to fill_ | |
+| First token | 701 ms | 1556 ms |
+| Full reply | 742 ms | 1595 ms |
+| Fallback rate | 23.3% | |
+
+30 live turns from Dhaka against the Singapore deployment. Cards and a scripted line are on screen before the first token.
 
 ## Tech stack
 
@@ -88,7 +90,7 @@ Open http://localhost:3000. Use Chrome or Edge for speech recognition; everythin
 
 ## Tests
 
-378 Vitest tests cover the curriculum, learning engine, mode detector, SEL, safety guards, prompt composer, chat route (with a mocked model), grown-up corner and UI helpers. GitHub Actions runs every check on each push.
+443 Vitest tests cover the curriculum, learning engine, mode detector, SEL, safety guards, prompt composer, chat route (with a mocked model), grown-up corner and UI helpers. GitHub Actions runs every check on each push.
 
 ```bash
 npm run typecheck
