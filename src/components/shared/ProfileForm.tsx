@@ -31,6 +31,8 @@ export function ProfileForm() {
   const { addProfile } = useProfiles();
   const [draft, setDraft] = useState<Draft>({ nickname: "", interests: [] });
   const [touched, setTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   const parsed = profileInputSchema.safeParse(draft);
   const nicknameError =
@@ -48,12 +50,19 @@ export function ProfileForm() {
           : d.interests,
     }));
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setTouched(true);
-    if (!parsed.success) return;
-    const profile = addProfile(parsed.data);
-    router.push(profile ? `/buddy?p=${profile.id}` : "/");
+    if (!parsed.success || saving) return;
+    setSaving(true);
+    setSaveFailed(false);
+    const profile = await addProfile(parsed.data);
+    if (!profile) {
+      setSaveFailed(true);
+      setSaving(false);
+      return;
+    }
+    router.push(`/buddy?p=${profile.id}`);
   };
 
   return (
@@ -149,9 +158,14 @@ export function ProfileForm() {
           </div>
         </fieldset>
 
-        <Button type="submit" variant="accent" className="self-stretch">
-          Start playing
+        <Button type="submit" variant="accent" className="self-stretch" disabled={saving}>
+          {saveFailed ? "Try again" : "Start playing"}
         </Button>
+        {saveFailed && (
+          <p role="alert" className="-mt-4 text-center text-body">
+            Pip could not save that. Please try again.
+          </p>
+        )}
         {touched && !parsed.success && (
           <p role="alert" className="-mt-4 text-center text-body">
             Please pick an age and a face first.
