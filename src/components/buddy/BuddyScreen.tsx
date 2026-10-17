@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Pip } from "@/components/pip/Pip";
+import { EXPRESSION_FOR_MODE, type PipExpression } from "@/components/pip/expressions";
+import { useBuddyChat } from "@/hooks/useBuddyChat";
+import type { Profile } from "@/hooks/profileSchema";
+import { useProfiles } from "@/hooks/useProfiles";
+import { useSpeech, type SpokenWord } from "@/hooks/useSpeech";
+import type { Mode } from "@/types/domain";
+import { cn } from "@/lib/utils";
+import { CheckIn } from "./CheckIn";
+import { MicButton } from "./MicButton";
+import { MoodBar } from "./MoodBar";
+import { PictureCards } from "./PictureCards";
+import { SpeechBubble } from "./SpeechBubble";
+import { StarBurst } from "./StarBurst";
+import { TopBar } from "./TopBar";
+
+const MODE_BACKGROUND: Record<Mode, string> = {
+  LEARN: "bg-mode-learn",
+  CHAT: "bg-mode-chat",
+  PLAY: "bg-mode-play",
+  SUPPORT: "bg-mode-support",
+  CALM: "bg-mode-calm",
+};
+
+/** Finds the profile chosen on the welcome screen, then starts the session. */
+export function BuddyScreen() {
+  const router = useRouter();
+  const profileId = useSearchParams().get("p");
+  const { profiles } = useProfiles();
+  const profile = profiles?.find((p) => p.id === profileId);
+
+  useEffect(() => {
+    if (profiles !== null && !profile) router.replace("/");
+  }, [profiles, profile, router]);
+
+  return profile ? <BuddySession profile={profile} /> : <div className="min-h-dvh bg-mode-learn" />;
+}
+
+function BuddySession({ profile }: { profile: Profile }) {
+  const chat = useBuddyChat();
+  const speech = useSpeech();
+  const [spoken, setSpoken] = useState<{ key: string; word: SpokenWord } | null>(null);
+
+  const checkingIn = chat.lineId === 0;
+  const line = checkingIn ? `Hi ${profile.nickname}! How do you feel?` : chat.pipLine;
+  const lineKey = `line-${chat.lineId}`;
+  const { speak } = speech;
+
+  useEffect(() => {
+    speak(line, {
+      onWord: (word) => setSpoken({ key: lineKey, word }),
+      onEnd: () => setSpoken(null),
+    });
+  }, [speak, line, lineKey]);
+
+  const locked = speech.speaking || chat.status === "thinking";
+  const celebrating = chat.feedback?.kind === "correct";
+  const expression: PipExpression =
+    chat.status === "thinking" ? "thinking" : celebrating ? "celebrate" : checkingIn ? "chatty" : EXPRESSION_FOR_MODE[chat.mode];
+  const word = spoken?.key === lineKey ? spoken.word : null;
+
+  const toggleListening = () =>
+    speech.listening ? speech.stopListening() : speech.listen((text) => chat.sendText(text, "voice"));
+
+  return (
+    <main
+      className={cn(
+        "mx-auto flex h-dvh w-full max-w-5xl flex-col gap-3 overflow-y-auto px-4 py-3 transition-colors duration-(--duration-slow)",
+        checkingIn ? "bg-mode-chat" : MODE_BACKGROUND[chat.mode],
+      )}
+    >
+      <TopBar stars={chat.stars} muted={speech.muted} mode={chat.mode} onToggleMute={speech.toggleMute} />
+
+      <div className="grid min-h-0 flex-1 gap-3 landscape:min-[700px]:grid-cols-2 landscape:min-[700px]:items-center landscape:min-[700px]:gap-10">
+        <section className="flex min-h-0 flex-col items-center gap-3 self-stretch">
+          <div className="relative min-h-28 w-full max-w-72 flex-1 landscape:min-[700px]:max-h-[55dvh]">
+            <Pip expression={expression} speaking={speech.speaking} />
+            <StarBurst trigger={chat.bursts} />
+            <div className="absolute right-0 bottom-0">
+              <MicButton
+                supported={speech.listenSupported}
+                listening={speech.listening}
+                onToggle={toggleListening}
+              />
+            </div>
+          </div>
+          <SpeechBubble text={line} word={word} className="w-full" />
+        </section>
+
+        <section className="flex flex-col gap-3">
+          {checkingIn ? (
+            <CheckIn locked={locked} onPick={chat.sendMood} />
+          ) : (
+            chat.activity && (
+              <PictureCards
+                activityId={chat.activity.id}
+                choices={chat.activity.choices}
+                locked={locked}
+                feedback={chat.feedback}
+                onPick={chat.sendCard}
+              />
+            )
+          )}
+          <MoodBar
+            onMood={chat.sendMood}
+            onBreak={chat.sendBreak}
+            restSuggested={chat.restSuggested}
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
