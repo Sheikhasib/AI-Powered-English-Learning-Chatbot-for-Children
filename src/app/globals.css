@@ -127,3 +127,23 @@
     outline-offset: 3px;
   }
 }
+
+/* The current skill on the map breathes; reduced motion fades it instead of growing it. */
+@keyframes pip-pulse {
+  50% {
+    transform: scale(1.25);
+  }
+}
+@keyframes pip-fade-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+.animate-pip-pulse {
+  animation: pip-pulse 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pip-pulse {
+    animation: pip-fade-pulse 1.8s ease-in-out infinite;
+  }
+}

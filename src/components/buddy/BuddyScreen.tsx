@@ -17,6 +17,7 @@ import { LevelUp } from "./LevelUp";
 import { MicButton } from "./MicButton";
 import { MoodBar } from "./MoodBar";
 import { SpeechBubble } from "./SpeechBubble";
+import { StarCount } from "./StarCount";
 import { StarBurst } from "./StarBurst";
 import { TopBar } from "./TopBar";
 
@@ -84,13 +85,16 @@ function BuddySession({ profile }: { profile: Profile }) {
         checkingIn ? "bg-mode-chat" : MODE_BACKGROUND[chat.mode],
       )}
     >
-      <TopBar stars={chat.stars} muted={speech.muted} mode={chat.mode} onToggleMute={speech.toggleMute} />
+      <TopBar profileId={profile.id} muted={speech.muted} onToggleMute={speech.toggleMute} />
 
       <div className="grid min-h-0 flex-1 gap-3 landscape:min-[700px]:grid-cols-2 landscape:min-[700px]:items-center landscape:min-[700px]:gap-10">
         <section className="flex min-h-0 flex-col items-center gap-3 self-stretch">
           <div className="relative min-h-28 w-full max-w-72 flex-1 landscape:min-[700px]:max-h-[55dvh]">
             <Pip expression={expression} speaking={speech.speaking} />
             <StarBurst trigger={chat.bursts} />
+            <div className="absolute top-0 left-0">
+              <StarCount stars={chat.stars} mode={chat.mode} />
+            </div>
             <div className="absolute right-0 bottom-0">
               <MicButton
                 supported={speech.listenSupported}

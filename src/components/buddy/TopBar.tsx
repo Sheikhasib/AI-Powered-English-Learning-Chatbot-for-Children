@@ -1,45 +1,41 @@
 import Link from "next/link";
-import { House, Star, Volume2, VolumeX } from "lucide-react";
-import type { Mode } from "@/types/domain";
-
-const MODE_LABEL: Record<Mode, string> = {
-  LEARN: "Learn",
-  CHAT: "Chat",
-  PLAY: "Play",
-  SUPPORT: "Support",
-  CALM: "Calm",
-};
+import { House, Map as MapIcon, Sticker, Volume2, VolumeX, type LucideIcon } from "lucide-react";
+import { childHref } from "./links";
 
 type Props = {
-  stars: number;
+  profileId: string;
   muted: boolean;
-  mode: Mode;
   onToggleMute: () => void;
 };
 
 const roundButton =
   "grid size-16 place-items-center rounded-full border-2 border-border bg-card text-primary active:scale-[0.96] motion-reduce:active:scale-100";
 
-/** Home, star count and mute. The tiny mode label is for grown-ups; the child feels the mode in Pip. */
-export function TopBar({ stars, muted, mode, onToggleMute }: Props) {
+type NavProps = { href: string; label: string; icon: LucideIcon };
+
+/** Icon on phones; icon and word where there is room, so a grown-up can read it too. */
+function NavButton({ href, label, icon: Icon }: NavProps) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className={`${roundButton} min-[700px]:flex min-[700px]:w-auto min-[700px]:items-center min-[700px]:gap-2 min-[700px]:px-6`}
+    >
+      <Icon aria-hidden className="size-8" />
+      <span aria-hidden className="hidden text-label font-bold min-[700px]:inline">
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+/** Home, map, stickers and sound: four big buttons. */
+export function TopBar({ profileId, muted, onToggleMute }: Props) {
   return (
     <header className="flex items-center justify-between gap-2">
-      <Link href="/" aria-label="Home" className={roundButton}>
-        <House className="size-8" />
-      </Link>
-      <div className="flex flex-col items-center">
-        <div
-          role="status"
-          aria-label={`${stars} stars`}
-          className="flex h-16 min-w-24 items-center justify-center gap-2 rounded-full bg-card px-5 text-label font-bold"
-        >
-          <Star aria-hidden className="size-7 fill-accent text-accent" />
-          <span>{stars}</span>
-        </div>
-        <span className="text-[0.7rem] text-muted-foreground" aria-label={`Pip is in ${MODE_LABEL[mode]} mode`}>
-          {MODE_LABEL[mode]}
-        </span>
-      </div>
+      <NavButton href="/" label="Home" icon={House} />
+      <NavButton href={childHref("/map", profileId)} label="Map" icon={MapIcon} />
+      <NavButton href={childHref("/stickers", profileId)} label="Stickers" icon={Sticker} />
       <button
         type="button"
         onClick={onToggleMute}
