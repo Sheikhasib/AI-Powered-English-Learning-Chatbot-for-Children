@@ -15,7 +15,7 @@ This is a job-assessment submission. Code quality, architecture and child-approp
 | Framework | Next.js 16 App Router, React 19, TypeScript strict (no `any`) |
 | UI | Tailwind CSS 4, shadcn/ui (restyled for children), Motion (`motion/react`), Lucide icons |
 | Font | Andika via `next/font/google` (designed for early readers) |
-| LLM | Vercel AI SDK (`ai`) + `@ai-sdk/openai-compatible` pointed at OpenCode Zen; model from env (`LLM_MODEL`, default `big-pickle`) |
+| LLM | Vercel AI SDK (`ai`) + `@ai-sdk/openai-compatible` pointed at Groq; model from env (`LLM_MODEL`, default `openai/gpt-oss-20b`) |
 | Database | Prisma Postgres + Prisma ORM |
 | Rate limiting | Redis (Upstash) with `@upstash/ratelimit` |
 | Voice | Browser Web Speech API (`speechSynthesis`, `SpeechRecognition`) behind a `useSpeech` hook |
@@ -81,9 +81,9 @@ All read through `src/lib/env.ts` (Zod-validated, server-only unless prefixed `N
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Prisma Postgres connection string |
-| `OPENCODE_API_KEY` | LLM key (server only) |
-| `LLM_BASE_URL` | OpenAI-compatible base URL, default `https://opencode.ai/inference/openai/v1` |
-| `LLM_MODEL` | Model id, default `big-pickle` |
+| `LLM_API_KEY` | LLM key (server only) |
+| `LLM_BASE_URL` | OpenAI-compatible base URL, default `https://api.groq.com/openai/v1` |
+| `LLM_MODEL` | Model id, default `openai/gpt-oss-20b` |
 | `LLM_FIRST_TOKEN_TIMEOUT_MS` | Fallback trigger, default `1200` |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Rate limiting |
 | `PARENT_GATE_SECRET` | Signs the short-lived parent-area cookie |

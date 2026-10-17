@@ -3,7 +3,7 @@ import { parseEnv } from "@/lib/env";
 
 const valid = {
   DATABASE_URL: "postgres://user:pass@host:5432/db",
-  OPENCODE_API_KEY: "test-key",
+  LLM_API_KEY: "test-key",
   KV_REST_API_URL: "https://example.upstash.io",
   KV_REST_API_TOKEN: "test-token",
   PARENT_GATE_SECRET: "0123456789abcdef",
@@ -12,8 +12,8 @@ const valid = {
 describe("parseEnv", () => {
   it("fills defaults for the optional LLM settings", () => {
     const env = parseEnv(valid);
-    expect(env.LLM_BASE_URL).toBe("https://opencode.ai/inference/openai/v1");
-    expect(env.LLM_MODEL).toBe("big-pickle");
+    expect(env.LLM_BASE_URL).toBe("https://api.groq.com/openai/v1");
+    expect(env.LLM_MODEL).toBe("openai/gpt-oss-20b");
     expect(env.LLM_FIRST_TOKEN_TIMEOUT_MS).toBe(1200);
   });
 
@@ -25,12 +25,12 @@ describe("parseEnv", () => {
 
   it("names every missing variable in the error", () => {
     expect(() => parseEnv({})).toThrowError(/DATABASE_URL/);
-    expect(() => parseEnv({})).toThrowError(/OPENCODE_API_KEY/);
+    expect(() => parseEnv({})).toThrowError(/LLM_API_KEY/);
     expect(() => parseEnv({})).toThrowError(/PARENT_GATE_SECRET/);
   });
 
   it("treats empty strings like missing values", () => {
-    expect(() => parseEnv({ ...valid, OPENCODE_API_KEY: "" })).toThrowError(/OPENCODE_API_KEY/);
+    expect(() => parseEnv({ ...valid, LLM_API_KEY: "" })).toThrowError(/LLM_API_KEY/);
   });
 
   it("rejects a parent gate secret that is too short to sign with", () => {

@@ -15,7 +15,7 @@ A Next.js 16 app deployed on Vercel with the database, Redis, LLM adapter, env v
 - `src/server/device.ts`: reads or sets the anonymous `pip_device` cookie (httpOnly, SameSite=Lax, Secure in prod, 1 year, random UUID).
 - `src/server/timing.ts`: `createTimer()` with `mark(name)` and `toServerTimingHeader()`.
 - `src/server/logger.ts`: silent in production except `error`.
-- `src/llm/provider.ts`: `createOpenAICompatible({ name: 'opencode', baseURL: env.LLM_BASE_URL, apiKey: env.OPENCODE_API_KEY })` and `chatModel = provider(env.LLM_MODEL)`.
+- `src/llm/provider.ts`: `createOpenAICompatible({ name: 'groq', baseURL: env.LLM_BASE_URL, apiKey: env.LLM_API_KEY })` and `chatModel = provider(env.LLM_MODEL)`.
 - `src/app/api/health/llm/route.ts`: streams a 10-word reply to "Say hello to a child", returns `{ model, firstTokenMs, totalMs }`. Disabled in production unless `?key=` matches `PARENT_GATE_SECRET`.
 - `prisma/schema.prisma`: models below.
 - `next.config.ts`: security headers from `rules/security.md`, `removeConsole` in production.
