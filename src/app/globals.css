@@ -122,6 +122,13 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind 4 preflight resets buttons to the default cursor; tappable things should look tappable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  summary {
+    cursor: pointer;
+  }
   :focus-visible {
     outline: 3px solid var(--ring);
     outline-offset: 3px;
