@@ -6,7 +6,8 @@ import { randomInt } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const TURNS = 30;
-const PAUSE_MS = 400;
+const TURN_INTERVAL_MS = 3200; // keeps us under the 20 turns per minute rate limit
+const RETRY_AFTER_429_MS = 10_000;
 const NUMBER_WORDS: Record<string, number> = { five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
 const TEXTS = ["I like dogs", "I feel sad", "I like my cat", "I am happy"];
 const MOODS = ["HAPPY", "SAD", "TIRED", "EXCITED"];
@@ -14,6 +15,8 @@ const MOODS = ["HAPPY", "SAD", "TIRED", "EXCITED"];
 type Choice = { id: string };
 type Turn = { activity: { id: string; choices: Choice[] } | null };
 type Sample = { firstTokenMs: number; totalMs: number; fallback: boolean };
+
+class RateLimitedError extends Error {}
 type Input =
   | { kind: "text"; text: string }
   | { kind: "card"; activityId: string; choiceId: string; responseMs: number }
@@ -57,6 +60,7 @@ async function json<T>(response: Response, what: string): Promise<T> {
 async function runTurn(body: unknown): Promise<{ sample: Sample; turn: Turn | null }> {
   const started = performance.now();
   const response = await call("/api/chat", { method: "POST", body });
+  if (response.status === 429) throw new RateLimitedError("chat failed with 429");
   if (!response.ok || !response.body) throw new Error(`chat failed with ${response.status}`);
 
   const decoder = new TextDecoder();
@@ -101,7 +105,7 @@ function percentile(sorted: number[], p: number): number {
   return sorted[Math.min(Math.max(rank, 0), sorted.length - 1)] ?? 0;
 }
 
-function summarise(samples: Sample[]): string {
+function summarise(samples: Sample[], limitedTurns: number): string {
   const first = samples.map((s) => s.firstTokenMs).sort((a, b) => a - b);
   const total = samples.map((s) => s.totalMs).sort((a, b) => a - b);
   const fallbackRate = (samples.filter((s) => s.fallback).length / samples.length) * 100;
@@ -114,9 +118,21 @@ function summarise(samples: Sample[]): string {
     `| First token | ${ms(percentile(first, 50))} | ${ms(percentile(first, 95))} | 1000 ms |`,
     `| Full reply | ${ms(percentile(total, 50))} | ${ms(percentile(total, 95))} | 2000 ms |`,
     "",
-    `| Fallback rate | ${fallbackRate.toFixed(1)}% |`,
+    "| Fallback rate | Turns that got a 429 |",
     "|---|---|",
+    `| ${fallbackRate.toFixed(1)}% | ${limitedTurns} |`,
   ].join("\n");
+}
+
+/** Retries a rate-limited turn once after a pause; reports whether it was limited. */
+async function runTurnWithRetry(body: unknown): Promise<{ sample: Sample; turn: Turn | null; limited: boolean }> {
+  try {
+    return { ...(await runTurn(body)), limited: false };
+  } catch (error) {
+    if (!(error instanceof RateLimitedError)) throw error;
+    await sleep(RETRY_AFTER_429_MS);
+    return { ...(await runTurn(body)), limited: true };
+  }
 }
 
 /** Solves the gate's sum in words ("seven plus nine") the way a grown-up would. */
@@ -146,6 +162,7 @@ async function main(): Promise<void> {
   const profileId = created.profile.id;
 
   const samples: Sample[] = [];
+  let limitedTurns = 0;
   try {
     const session = await json<{ sessionId: string }>(
       await call("/api/session", { method: "POST", body: { profileId, checkIn: "HAPPY" } }),
@@ -153,10 +170,12 @@ async function main(): Promise<void> {
     );
     let turn: Turn | null = null;
     for (let i = 0; i < TURNS; i++) {
-      const result = await runTurn({ profileId, sessionId: session.sessionId, input: inputFor(i, turn) });
+      const turnStarted = performance.now();
+      const result = await runTurnWithRetry({ profileId, sessionId: session.sessionId, input: inputFor(i, turn) });
       samples.push(result.sample);
+      if (result.limited) limitedTurns += 1;
       turn = result.turn;
-      await sleep(PAUSE_MS);
+      await sleep(Math.max(0, TURN_INTERVAL_MS - (performance.now() - turnStarted)));
     }
   } finally {
     try {
@@ -166,7 +185,7 @@ async function main(): Promise<void> {
       process.exitCode = 1;
     }
   }
-  if (samples.length > 0) process.stdout.write(`${summarise(samples)}\n`);
+  if (samples.length > 0) process.stdout.write(`${summarise(samples, limitedTurns)}\n`);
 }
 
 main().catch((error: unknown) => {
