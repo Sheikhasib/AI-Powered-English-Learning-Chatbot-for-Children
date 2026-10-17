@@ -4,6 +4,12 @@ Pip is one Next.js 16 app on Vercel. A deterministic TypeScript engine decides w
 
 ## 1. System context
 
+![System context](diagrams/system-context.png)
+
+<details>
+<summary>Mermaid source</summary>
+
+
 ```mermaid
 flowchart LR
   child([Child 3 to 6<br/>tablet or phone]) -->|taps cards, talks| browser
@@ -38,9 +44,17 @@ flowchart LR
   metrics --> db
 ```
 
+</details>
+
 Audio never leaves the device: the browser transcribes speech and speaks Pip's lines. Only text reaches the server.
 
 ## 2. One child turn (`POST /api/chat`)
+
+![One child turn (`POST /api/chat`)](diagrams/chat-turn.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 
 ```mermaid
 sequenceDiagram
@@ -70,9 +84,17 @@ sequenceDiagram
   API-)DB: after(): persist turn, mastery, timings, mood classification
 ```
 
+</details>
+
 The picture cards and the scripted line are on screen before the LLM answers, so even a slow or failed LLM call never leaves the child waiting.
 
 ## 3. Mode state machine
+
+![Mode state machine](diagrams/mode-state-machine.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 
 ```mermaid
 stateDiagram-v2
@@ -95,9 +117,17 @@ stateDiagram-v2
   Calm --> Chat: child ready
 ```
 
+</details>
+
 Rules run in priority order (feelings first, teaching last). Support and Calm hold for at least two turns, and leaving Support never goes straight back to teaching.
 
 ## 4. Data model
+
+![Data model](diagrams/data-model.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 
 ```mermaid
 erDiagram
@@ -113,5 +143,7 @@ erDiagram
   Session { datetime startedAt enum checkIn datetime endedAt }
   Turn { string childInput "redacted" string botReply enum mode string modeReason enum mood bool fallback string safetyFlag int tFirstToken int tTotal }
 ```
+
+</details>
 
 Every child relation cascades, so "Delete all data" in the grown-up corner removes every row for that profile.

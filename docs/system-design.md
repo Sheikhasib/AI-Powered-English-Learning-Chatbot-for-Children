@@ -1,5 +1,9 @@
 # System design
 
+![Pip system context](diagrams/system-context.png)
+
+More diagrams (one chat turn, the mode state machine, the data model) are in [architecture.md](architecture.md).
+
 ## 1. The brief, and how Pip meets it
 
 | Requirement | How Pip meets it | Where |
