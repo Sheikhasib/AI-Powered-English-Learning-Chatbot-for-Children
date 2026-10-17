@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { GateClient } from "./GateClient";
 
 const DEFAULT_NEXT = "/parent";
@@ -8,7 +9,15 @@ function safeNext(value: string | string[] | undefined): string {
   return next && /^\/parent(?:[/?]|$)/.test(next) ? next : DEFAULT_NEXT;
 }
 
-export default async function ParentGatePage({ searchParams }: PageProps<"/parent-gate">) {
+async function Gate({ searchParams }: Pick<PageProps<"/parent-gate">, "searchParams">) {
   const { next } = await searchParams;
   return <GateClient next={safeNext(next)} />;
+}
+
+export default function ParentGatePage({ searchParams }: PageProps<"/parent-gate">) {
+  return (
+    <Suspense fallback={null}>
+      <Gate searchParams={searchParams} />
+    </Suspense>
+  );
 }

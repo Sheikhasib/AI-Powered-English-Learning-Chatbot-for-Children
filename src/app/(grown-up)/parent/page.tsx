@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
@@ -30,7 +31,15 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function ParentPage({ searchParams }: PageProps<"/parent">) {
+export default function ParentPage({ searchParams }: PageProps<"/parent">) {
+  return (
+    <Suspense fallback={null}>
+      <Dashboard searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function Dashboard({ searchParams }: Pick<PageProps<"/parent">, "searchParams">) {
   const params = await searchParams;
   const deviceId = (await cookies()).get(DEVICE_COOKIE)?.value;
   const db = getDb();
