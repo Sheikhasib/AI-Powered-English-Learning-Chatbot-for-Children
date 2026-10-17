@@ -62,7 +62,7 @@ Support and Calm hold for at least 2 turns unless the child taps a happy face, a
 
 Response: an AI SDK UI message stream. The first part is `data-turn` with `{ mode, mood, reason, activity, fallbackLine, celebrate, stars }`, followed by the text of Pip's line. Errors use `{ error: { code, message } }`; a 429 becomes "Pip needs a little rest" in the UI.
 
-Other routes: `/api/profile` (create, read, delete), `/api/progress`, `/api/metrics` (p50 and p95 from stored timings), `/api/health/llm` (gated latency probe).
+Other routes: `/api/session` (start a session with the check-in mood), `/api/profile` (create, list, gated hard delete), `/api/progress` (level and skill states for the map and stickers), `/api/metrics` (p50 and p95 from stored timings, gated), `/api/demo` (switch the grown-up corner to the sample profile, gated) and `/api/health/llm` (latency probe, hidden in production without the key). The parental gate lives at `/parent-gate`; its sum is checked on the server and the answer never reaches the browser.
 
 ## 6. Latency budget
 
@@ -75,7 +75,9 @@ Other routes: `/api/profile` (create, read, delete), `/api/progress`, `/api/metr
 | Rest of the line | 500 ms | about 25 words |
 | **Total** | **under 2 s** | writes happen in `after()`, off the clock |
 
-The cards and the fallback line are on screen within about 100 ms, before the LLM starts. If no token arrives within `LLM_FIRST_TOKEN_TIMEOUT_MS` (1200 ms), the call is aborted and the scripted line is streamed instead. Each turn records `t_guard`, `t_context`, `t_engine`, `t_first_token` and `t_total`, sends them as a `Server-Timing` header and stores them. Measured numbers: see `latency.md`.
+The cards and the fallback line are on screen before the LLM starts. If no token arrives within `LLM_FIRST_TOKEN_TIMEOUT_MS` (1200 ms), the call is aborted and the scripted line is streamed instead. The model is called with reasoning effort "low" and `maxOutputTokens` 300: `gpt-oss-20b` spends part of its budget on hidden reasoning, and a lower cap produced empty replies in testing.
+
+Each turn records `t_guard`, `t_context`, `t_engine`, `t_first_token` and `t_total`. The first three go in the `Server-Timing` header; the last two are only known after the model answers, so they arrive in a final `data-timing` stream part. All five are stored with the turn. Measured numbers: see `latency.md`.
 
 ## 7. Safety and privacy
 
@@ -107,7 +109,7 @@ Route handlers are stateless, so Vercel scales them horizontally. Postgres is re
 - Vitest for every engine and safety module: mastery bounds, level unlock at exactly 80%, picker rules, kind rotation, each detector rule, hysteresis, misspellings, guard cases, effort-only praise, prompt size.
 - A route test with a mocked model: `data-turn` is always first and the fallback streams when the first token is late.
 - One Playwright smoke test of the main flow.
-- CI runs typecheck, lint, test and build.
+- GitHub Actions runs typecheck, lint, test and build on every push.
 
 ## 11. Trade-offs
 
@@ -115,6 +117,9 @@ Route handlers are stateless, so Vercel scales them horizontally. Postgres is re
 - **Web Speech over cloud speech.** Free, private (no audio upload) and zero latency to start. Voice quality and recognition vary by browser, so every action also works by tapping.
 - **LLM for voice only.** Less "creative" conversation, but consistent teaching, safe output and a guaranteed answer under 2 s.
 - **Free-tier LLM (Groq).** Fast and free for a demo, with a rate limit; the adapter makes a paid provider a config change.
+- **Writes after the response.** Skill progress is saved in `after()` so the child never waits, which means two taps within about half a second can overwrite one mastery update. The UI's short card lock makes this rare; a fix would need a blocking write or an atomic increment.
+- **The answer id travels with the cards.** It keeps grading simple; a curious grown-up could read it in the network tab. For 3 to 6 year olds this is an acceptable trade.
+- **Rate limiter fails open.** If Redis is down, Pip keeps talking rather than going silent on a child.
 
 ## 12. Future work
 

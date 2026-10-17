@@ -82,10 +82,13 @@ Open http://localhost:3000. Use Chrome or Edge for speech recognition; everythin
 2. Add Upstash Redis from the Vercel Marketplace (prefix `KV`, region Singapore).
 3. Create a Prisma Postgres database in the same region and add `DATABASE_URL`.
 4. Add the LLM and gate variables, marking secrets as Sensitive.
-5. Set the function region to `sin1` so it sits next to the database and Redis.
+5. `vercel.json` pins functions to `sin1` so they sit next to the database and Redis.
 6. Deploy, then run `npm run db:push` once against the production database.
+7. Optional: `npm run db:seed` adds a sample child ("Mina") so the grown-up corner has data to explore. Its timings are made up and are labelled "Sample data"; they are never counted in the latency numbers.
 
 ## Tests
+
+378 Vitest tests cover the curriculum, learning engine, mode detector, SEL, safety guards, prompt composer, chat route (with a mocked model), grown-up corner and UI helpers. GitHub Actions runs every check on each push.
 
 ```bash
 npm run typecheck
