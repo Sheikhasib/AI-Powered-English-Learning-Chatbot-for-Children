@@ -41,6 +41,8 @@ export const turnDataSchema = z.object({
   fallbackLine: z.string(),
   /** True when the last card was right or a level was unlocked. */
   celebrate: z.boolean(),
+  /** Set on the turn that unlocks a new level, so the UI never has to parse `reason`. */
+  levelUp: z.object({ from: z.number().int(), to: z.number().int() }).nullable(),
   /** Brave-try stars earned by this turn, not the running total. */
   stars: z.number().int().nonnegative(),
 });

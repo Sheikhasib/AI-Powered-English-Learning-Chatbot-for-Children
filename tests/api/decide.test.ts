@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decideTurn } from "@/app/api/chat/decide";
 import { createRng } from "@/engine/rng";
-import { getSkill } from "@/engine/curriculum";
+import { curriculum, getSkill } from "@/engine/curriculum";
 import { inputGuard } from "@/safety/inputGuard";
 import type { RecentTurn, TurnContext } from "@/server/repositories/context";
 import type { ChatInput } from "@/types/chat";
@@ -52,6 +52,19 @@ describe("decideTurn", () => {
     expect(turn.stars).toBe(1);
     expect(turn.activity).not.toBeNull();
     expect(record.correct).toBe(false);
+  });
+
+  it("reports the old and new level when a right card unlocks the next one", () => {
+    const mastered = curriculum[1].skills.map((skill) => ({
+      skillId: skill.id, mastery: 0.95, attempts: 10, streak: 5, lastSeenAt: NOW, dueAt: NOW,
+    }));
+    const { turn } = decide(tap(target?.id ?? ""), { ...context(), skills: mastered });
+    expect(turn.levelUp).toEqual({ from: 2, to: 3 });
+    expect(turn.celebrate).toBe(true);
+  });
+
+  it("leaves levelUp empty on an ordinary turn", () => {
+    expect(decide(tap(target?.id ?? "")).turn.levelUp).toBeNull();
   });
 
   it("moves to Play after two fast taps in a row", () => {

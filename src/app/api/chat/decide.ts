@@ -174,6 +174,7 @@ export function decideTurn(args: DecideArgs): Decision {
       activity: plan.activity,
       fallbackLine: line,
       celebrate: Boolean(graded?.correct) || levelDecision.celebrate,
+      levelUp: levelDecision.level === level ? null : { from: level, to: levelDecision.level },
       stars,
     },
     prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input, decision.mode, decision.mood), closingLine: closing, wrongAnswer: event === "miss" },
