@@ -1,0 +1,161 @@
+import { makeItems } from "./helpers";
+import type { ActivityKind, Skill } from "./types";
+
+const LETTER_KINDS: ActivityKind[] = ["listen-tap", "first-sound", "say-it", "picture-match"];
+const BASIC_KINDS: ActivityKind[] = ["listen-tap", "picture-match", "say-it"];
+
+const stars = (n: number) => "⭐".repeat(n);
+
+/** Level 1: sounds, letters and the first everyday words. Letter items name a picture word and its first sound. */
+export const level1Skills: Skill[] = [
+  {
+    id: "l1.letters.a-e",
+    level: 1,
+    title: "Letters A to E",
+    unit: "letters",
+    order: 1,
+    items: makeItems("letters", [
+      ["apple", "🍎", "aah"],
+      ["ball", "⚽", "buh"],
+      ["cat", "🐱", "cuh"],
+      ["dog", "🐶", "duh"],
+      ["egg", "🥚", "eh"],
+    ]),
+    activityKinds: LETTER_KINDS,
+  },
+  {
+    id: "l1.letters.f-j",
+    level: 1,
+    title: "Letters F to J",
+    unit: "letters",
+    order: 2,
+    items: makeItems("letters", [
+      ["fish", "🐟", "fff"],
+      ["goat", "🐐", "guh"],
+      ["hat", "🧢", "huh"],
+      ["ice", "🧊", "ih"],
+      ["juice", "🧃", "juh"],
+    ]),
+    activityKinds: LETTER_KINDS,
+  },
+  {
+    id: "l1.letters.k-o",
+    level: 1,
+    title: "Letters K to O",
+    unit: "letters",
+    order: 3,
+    items: makeItems("letters", [
+      ["kite", "🪁", "kuh"],
+      ["lion", "🦁", "lll"],
+      ["moon", "🌙", "mmm"],
+      ["nest", "🪺", "nnn"],
+      ["octopus", "🐙", "oh"],
+    ]),
+    activityKinds: LETTER_KINDS,
+  },
+  {
+    id: "l1.letters.p-t",
+    level: 1,
+    title: "Letters P to T",
+    unit: "letters",
+    order: 4,
+    items: makeItems("letters", [
+      ["pig", "🐷", "puh"],
+      ["queen", "👸", "kwuh"],
+      ["rain", "🌧️", "rrr"],
+      ["sun", "☀️", "sss"],
+      ["tree", "🌳", "tuh"],
+    ]),
+    activityKinds: LETTER_KINDS,
+  },
+  {
+    id: "l1.letters.u-z",
+    level: 1,
+    title: "Letters U to Z",
+    unit: "letters",
+    order: 5,
+    items: makeItems("letters", [
+      ["umbrella", "☂️", "uh"],
+      ["van", "🚐", "vvv"],
+      ["watch", "⌚", "wuh"],
+      ["xylophone", "🎹", "zuh"],
+      ["yo-yo", "🪀", "yuh"],
+      ["zebra", "🦓", "zzz"],
+    ]),
+    activityKinds: LETTER_KINDS,
+  },
+  {
+    id: "l1.colors",
+    level: 1,
+    title: "Colors",
+    unit: "colors",
+    order: 6,
+    items: makeItems("colors", [
+      ["red", "🔴"],
+      ["blue", "🔵"],
+      ["yellow", "🟡"],
+      ["green", "🟢"],
+      ["orange", "🟠"],
+      ["purple", "🟣"],
+    ]),
+    activityKinds: BASIC_KINDS,
+  },
+  {
+    id: "l1.numbers.1-5",
+    level: 1,
+    title: "Numbers 1 to 5",
+    unit: "numbers",
+    order: 7,
+    items: makeItems("numbers", [
+      ["one", stars(1)],
+      ["two", stars(2)],
+      ["three", stars(3)],
+      ["four", stars(4)],
+      ["five", stars(5)],
+    ]),
+    activityKinds: BASIC_KINDS,
+  },
+  {
+    id: "l1.numbers.6-10",
+    level: 1,
+    title: "Numbers 6 to 10",
+    unit: "numbers",
+    order: 8,
+    items: makeItems("numbers", [
+      ["six", stars(6)],
+      ["seven", stars(7)],
+      ["eight", stars(8)],
+      ["nine", stars(9)],
+      ["ten", stars(10)],
+    ]),
+    activityKinds: BASIC_KINDS,
+  },
+  {
+    id: "l1.greetings",
+    level: 1,
+    title: "Greetings and manners",
+    unit: "greetings",
+    order: 9,
+    items: makeItems("greetings", [
+      ["hello", "👋"],
+      ["goodbye", "🏠"],
+      ["please", "🤲"],
+      ["thank you", "💐"],
+    ]),
+    activityKinds: BASIC_KINDS,
+  },
+  {
+    id: "l1.shapes",
+    level: 1,
+    title: "Shapes",
+    unit: "shapes",
+    order: 10,
+    items: makeItems("shapes", [
+      ["circle", "⚪"],
+      ["square", "⬜"],
+      ["triangle", "🔺"],
+      ["star", "⭐"],
+    ]),
+    activityKinds: BASIC_KINDS,
+  },
+];
