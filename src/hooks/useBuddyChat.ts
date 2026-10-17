@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Activity } from "@/engine/curriculum/types";
+import type { LevelId } from "@/engine/curriculum/types";
 import { readyCheck } from "@/engine/sel/support";
 import { createMockTurnSource, type ChatInput, type TurnData } from "@/lib/mockTurn";
 import type { Mode, Mood } from "@/types/domain";
+import { unlockedLevel } from "./levelUp";
 
 /** How long a right answer stays on screen before the next cards appear. */
 const CELEBRATE_HOLD_MS = 1100;
@@ -37,6 +39,8 @@ type BuddyState = {
   restSuggested: boolean;
   /** True once the child has finished the breathing bubble for the current turn. */
   breathed: boolean;
+  /** The level just unlocked; the overlay shows until the child dismisses it. */
+  levelUp: LevelId | null;
 };
 
 const INITIAL: BuddyState = {
@@ -50,6 +54,7 @@ const INITIAL: BuddyState = {
   status: "idle",
   restSuggested: false,
   breathed: false,
+  levelUp: null,
 };
 
 /**
@@ -103,7 +108,12 @@ export function useBuddyChat() {
       if (turn.celebrate) {
         later(() => {
           shownAt.current = performance.now();
-          setState((s) => ({ ...s, activity: turn.activity, feedback: null }));
+          setState((s) => ({
+            ...s,
+            activity: turn.activity,
+            feedback: null,
+            levelUp: unlockedLevel(turn.reason) ?? s.levelUp,
+          }));
         }, CELEBRATE_HOLD_MS);
       } else {
         shownAt.current = performance.now();
@@ -176,5 +186,7 @@ export function useBuddyChat() {
     [],
   );
 
-  return { ...state, sendCard, sendText, sendMood, sendBreak, finishBreathing };
+  const dismissLevelUp = useCallback(() => setState((s) => ({ ...s, levelUp: null })), []);
+
+  return { ...state, sendCard, sendText, sendMood, sendBreak, finishBreathing, dismissLevelUp };
 }

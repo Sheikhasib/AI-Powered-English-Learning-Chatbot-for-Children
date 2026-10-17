@@ -231,7 +231,7 @@ export function createMockTurnSource(): TurnSource {
     mode = modeForRound();
     current = nextActivity();
     return turn({
-      reason: "correct answer",
+      reason: answered === LEARN_ROUND ? "Unlocked Level 2: 4 of 5 skills mastered" : "correct answer",
       activity: current,
       celebrate: true,
       stars: persisted ? 4 : 2,

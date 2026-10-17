@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence } from "motion/react";
 import { Pip } from "@/components/pip/Pip";
 import { EXPRESSION_FOR_MODE, type PipExpression } from "@/components/pip/expressions";
 import { useBuddyChat } from "@/hooks/useBuddyChat";
@@ -11,6 +12,7 @@ import { useSpeech, type SpokenWord } from "@/hooks/useSpeech";
 import type { Mode } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import { ActivityArea } from "./ActivityArea";
+import { LevelUp } from "./LevelUp";
 import { MicButton } from "./MicButton";
 import { MoodBar } from "./MoodBar";
 import { SpeechBubble } from "./SpeechBubble";
@@ -108,6 +110,9 @@ function BuddySession({ profile }: { profile: Profile }) {
           />
         </section>
       </div>
+      <AnimatePresence>
+        {chat.levelUp && <LevelUp level={chat.levelUp} onClose={chat.dismissLevelUp} />}
+      </AnimatePresence>
     </main>
   );
 }
