@@ -175,7 +175,7 @@ export function decideTurn(args: DecideArgs): Decision {
       celebrate: Boolean(graded?.correct) || levelDecision.celebrate,
       stars,
     },
-    prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input), closingLine: closing },
+    prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input, decision.mode, decision.mood), closingLine: closing },
     scripted: redirect !== null,
     record: {
       childInput: redirect ? NOT_SAVED : storedInput(input, text),

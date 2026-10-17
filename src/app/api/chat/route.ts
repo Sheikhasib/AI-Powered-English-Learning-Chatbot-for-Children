@@ -17,9 +17,6 @@ import { decideTurn, type Decision } from "./decide";
 import { afterResponse } from "./afterResponse";
 import { streamReply, writeScripted, type ReplyResult } from "./streamReply";
 
-/** The Node runtime keeps the Prisma driver and Upstash client simple; the region is pinned in the Vercel project settings. */
-export const runtime = "nodejs";
-
 const MAX_BODY_BYTES = 2048;
 const WEAK_SKILLS_SHOWN = 3;
 const RATE_LIMIT_RETRY_SECONDS = 60;
