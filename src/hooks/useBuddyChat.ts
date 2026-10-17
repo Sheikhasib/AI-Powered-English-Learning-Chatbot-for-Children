@@ -75,6 +75,8 @@ export function useBuddyChat(profileId: string) {
   const sessionId = useRef<string | null>(null);
   const turnSeen = useRef(false);
   const lastTurn = useRef<TurnData | null>(null);
+  /** `useChat` reports request failures here instead of throwing. */
+  const requestFailed = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -148,6 +150,9 @@ export function useBuddyChat(profileId: string) {
       lastTurn.current = part.data;
       applyTurn(part.data);
     },
+    onError: () => {
+      requestFailed.current = true;
+    },
     onFinish: ({ message, isError }) => {
       if (isError) return;
       const text = message.parts.flatMap((part) => (part.type === "text" ? part.text : [])).join(" ");
@@ -160,6 +165,7 @@ export function useBuddyChat(profileId: string) {
     async (input: ChatInput): Promise<boolean> => {
       setState((s) => ({ ...s, status: "thinking" }));
       turnSeen.current = false;
+      requestFailed.current = false;
       try {
         sessionId.current ??= await startSession({
           profileId,
@@ -168,22 +174,23 @@ export function useBuddyChat(profileId: string) {
         const body: ChatRequest = { profileId, sessionId: sessionId.current, input };
         setMessages([]);
         await sendMessage({ text: input.kind }, { body });
-        return true;
       } catch {
-        // A turn that already reached the screen must not be sent twice.
-        if (turnSeen.current) {
-          sayReply("");
-          return true;
-        }
-        setState((s) => ({
-          ...s,
-          pipLine: RESTING_LINE,
-          lineId: s.lineId + 1,
-          status: "resting",
-          feedback: null,
-        }));
-        return false;
+        requestFailed.current = true;
       }
+      if (!requestFailed.current) return true;
+      // A turn that already reached the screen must not be sent twice.
+      if (turnSeen.current) {
+        sayReply("");
+        return true;
+      }
+      setState((s) => ({
+        ...s,
+        pipLine: RESTING_LINE,
+        lineId: s.lineId + 1,
+        status: "resting",
+        feedback: null,
+      }));
+      return false;
     },
     [profileId, sendMessage, setMessages, sayReply],
   );
