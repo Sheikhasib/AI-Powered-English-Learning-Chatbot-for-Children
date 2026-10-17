@@ -75,6 +75,47 @@ describe("inputGuard", () => {
     if (result.action === "redirect") expect(result.script).toMatch(/grown-up/i);
   });
 
+  it.each([
+    "I want to die",
+    "i wanna die",
+    "i wana dy",
+    "I want 2 die",
+    "i wnat to die",
+    "I want to kill myself",
+    "i wish i was dead",
+    "I don't want to be alive",
+    "I'm going to hurt myself",
+    "he will kill me",
+    "she is going to hurt me",
+  ])("treats the self-harm or threat %j as a disclosure", (text) => {
+    expect(inputGuard(text)).toMatchObject({ action: "redirect", reason: "disclosure", flagForParent: true });
+  });
+
+  it.each([
+    "he hits my arm",
+    "my dad hurt my arm",
+    "she hert my head",
+    "he tuched my tummy",
+    "someone touched my private parts",
+    "he always hit my back",
+    "my brother kicks my leg",
+    "a man grabbed my hand",
+  ])("treats the harm to the child's body %j as a disclosure", (text) => {
+    expect(inputGuard(text)).toMatchObject({ action: "redirect", reason: "disclosure", flagForParent: true });
+  });
+
+  it.each([
+    "I hurt my knee falling",
+    "I hit my head on the table",
+    "my brother hit my ball",
+    "I touched my nose",
+    "I want to dye my hair",
+    "I hurt myself falling off my bike",
+    "he said I can hit my drum",
+  ])("does not call the everyday sentence %j a disclosure", (text) => {
+    expect(inputGuard(text)).toEqual({ action: "ok" });
+  });
+
   it("prefers the disclosure script over other findings", () => {
     const result = inputGuard("someone hurt me call 555 123 4567");
     expect(result).toMatchObject({ action: "redirect", reason: "disclosure" });

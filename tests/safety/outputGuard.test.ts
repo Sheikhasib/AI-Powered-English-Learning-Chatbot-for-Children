@@ -54,9 +54,24 @@ describe("outputGuard", () => {
     "What school do you go to?",
     "Can you tell me your phone number?",
     "What is your address?",
+    "Where do you go to school?",
+    "What is your school called?",
+    "What is your mum's name?",
+    "What is your teacher's name?",
+    "Who do you live with?",
+    "What town do you live in?",
+    "Are you home alone?",
+    "Are your parents home?",
   ])("rejects the personal question %j", (text) => {
     expect(outputGuard(text)).toEqual({ ok: false, reason: "personal_question" });
   });
+
+  it.each(["You are not alone, I am here.", "I love my school story too!", "Tell a grown-up you trust."])(
+    "lets the comforting line %j through",
+    (text) => {
+      expect(outputGuard(text)).toEqual({ ok: true });
+    },
+  );
 
   it("rejects suggestions to meet", () => {
     expect(outputGuard("Let's meet at the park.")).toEqual({ ok: false, reason: "meeting" });
