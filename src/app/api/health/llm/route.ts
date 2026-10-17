@@ -26,10 +26,10 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : "unknown error";
 }
 
-/** Dev: open. Production: hidden (404) unless ?key= equals PARENT_GATE_SECRET. */
+/** Dev: open. Production: hidden (404) unless the x-health-key header equals PARENT_GATE_SECRET; a URL key would end up in logs. */
 function isAllowed(request: Request): boolean {
   if (process.env.NODE_ENV !== "production") return true;
-  return keyMatches(new URL(request.url).searchParams.get("key"), env.PARENT_GATE_SECRET);
+  return keyMatches(request.headers.get("x-health-key"), env.PARENT_GATE_SECRET);
 }
 
 /** Measures the model's time to first token and total time for a tiny reply. */
