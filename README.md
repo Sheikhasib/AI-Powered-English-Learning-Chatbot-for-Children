@@ -90,7 +90,7 @@ Open http://localhost:3000. Use Chrome or Edge for speech recognition; everythin
 
 ## Tests
 
-449 Vitest tests cover the curriculum, learning engine, mode detector, SEL, safety guards, prompt composer, chat route (with a mocked model), grown-up corner and UI helpers. GitHub Actions runs every check on each push.
+452 Vitest tests cover the curriculum, learning engine, mode detector, SEL, safety guards, prompt composer, chat route (with a mocked model), grown-up corner and UI helpers. GitHub Actions runs every check on each push.
 
 ```bash
 npm run typecheck

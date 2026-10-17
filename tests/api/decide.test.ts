@@ -112,7 +112,28 @@ describe("decideTurn", () => {
     const ctx = context([{ ...miss, mode: "SUPPORT", activityId: "support:offer", correct: null }]);
     const { turn } = decide({ kind: "card", activityId: "support:offer", choiceId: "breathe", responseMs: 900 }, ctx);
     expect(turn.mode).toBe("CALM");
+    expect(turn.activity?.id).toBe("calm:belly-breathing");
     expect(turn.activity?.choices.map((c) => c.id)).toEqual(["ready", "not-yet"]);
+  });
+
+  it("offers the coping cards, not the same question, when a child in Support says not yet", () => {
+    const asked: RecentTurn = { ...miss, mode: "SUPPORT", activityId: "support:ready", correct: null };
+    const { turn } = decide({ kind: "card", activityId: "support:ready", choiceId: "not-yet", responseMs: 900 }, context([asked, asked]));
+    expect(turn.mode).toBe("SUPPORT");
+    expect(turn.activity?.choices.map((c) => c.id)).toEqual(["breathe", "slow-game"]);
+  });
+
+  it("lets a child who taps Ready after breathing leave Calm", () => {
+    const breathing: RecentTurn = { ...miss, mode: "CALM", activityId: "calm:belly-breathing", correct: null };
+    const { turn } = decide({ kind: "card", activityId: "calm:belly-breathing", choiceId: "ready", responseMs: 900 }, context([breathing, breathing]));
+    expect(turn.mode).not.toBe("CALM");
+  });
+
+  it("breathes again when a child in Calm says not yet", () => {
+    const breathing: RecentTurn = { ...miss, mode: "CALM", activityId: "calm:belly-breathing", correct: null };
+    const { turn } = decide({ kind: "card", activityId: "calm:belly-breathing", choiceId: "not-yet", responseMs: 900 }, context([breathing, breathing]));
+    expect(turn.mode).toBe("CALM");
+    expect(turn.activity?.id).toBe("calm:belly-breathing");
   });
 
   it("uses the fixed script for a disclosure and shows no cards", () => {

@@ -17,7 +17,7 @@ import type { ModeDecision, TurnInput } from "@/types/mode";
 import { gradeCard, type GradedCard } from "./grading";
 import { consecutiveMisses, deriveHistory, type DerivedHistory } from "./history";
 import { situationFor } from "./situation";
-import { READY_CHECK_ID, SUPPORT_OFFER_ID, copingOffer, readyCheckCard } from "./socialCards";
+import { SUPPORT_OFFER_ID, breathingCard, copingOffer, isReadyQuestion, readyCheckCard } from "./socialCards";
 
 export type DecideArgs = {
   ctx: TurnContext;
@@ -52,7 +52,13 @@ type Plan = { activity: Activity | null; showHint: boolean; reason: string | nul
 
 /** The check-in faces and support cards are answered with a tap, not words, so the tap becomes the matching phrase. */
 function cardPhrase(input: ChatInput): string {
-  return input.kind === "card" && input.activityId === READY_CHECK_ID && input.choiceId === "ready" ? "ready" : "";
+  return readyAnswer(input) === "ready" ? "ready" : "";
+}
+
+/** The child's answer to a "ready?" question, or null when this turn was not one. */
+function readyAnswer(input: ChatInput): "ready" | "not-yet" | null {
+  if (input.kind !== "card" || !isReadyQuestion(input.activityId)) return null;
+  return input.choiceId === "ready" || input.choiceId === "not-yet" ? input.choiceId : null;
 }
 
 /** A tap on a coping or ready card steers the mode directly; everything else is left to `detectMode`. */
@@ -65,7 +71,7 @@ function socialOverride(input: ChatInput, previous: DerivedHistory["previous"], 
   if (activityId === SUPPORT_OFFER_ID && choiceId === "slow-game") {
     return { ...base, mode: "PLAY", reason: "child chose a slow game" };
   }
-  if (activityId === READY_CHECK_ID && choiceId === "not-yet") {
+  if (readyAnswer(input) === "not-yet") {
     return { ...base, mode: previous.mode === "CALM" ? "CALM" : "SUPPORT", reason: "child is not ready yet" };
   }
   return null;
@@ -79,11 +85,13 @@ function planActivity(
   learner: LearnerProfile,
   skills: GradedCard["skills"],
 ): Plan {
+  // "Not yet" gets something to do instead of the same question again.
+  const notYet = readyAnswer(args.input) === "not-yet";
   if (mode === "SUPPORT") {
-    const again = history.previous.mode === "SUPPORT" && history.previous.turnsInMode > 0;
+    const again = history.previous.mode === "SUPPORT" && history.previous.turnsInMode > 0 && !notYet;
     return { activity: again ? readyCheckCard() : copingOffer(), showHint: false, reason: null };
   }
-  if (mode === "CALM") return { activity: readyCheckCard(), showHint: false, reason: null };
+  if (mode === "CALM") return { activity: breathingCard(), showHint: false, reason: null };
   if (mode === "CHAT") return { activity: null, showHint: false, reason: null };
 
   const pending = graded && !graded.correct ? { activity: graded.activity, misses: graded.priorMisses + 1 } : undefined;

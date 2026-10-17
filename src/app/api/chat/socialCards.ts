@@ -1,3 +1,4 @@
+import { BREATHING_ACTIVITY_ID, breathingActivity } from "@/components/buddy/breathing";
 import type { Activity } from "@/engine/curriculum/types";
 import { readyCheck, supportOpening, type SupportStep } from "@/engine/sel/support";
 
@@ -30,6 +31,16 @@ export function readyCheckCard(): Activity {
   return toActivity(READY_CHECK_ID, readyCheck());
 }
 
+/** Belly breathing with the bubble; its Ready and Not yet cards appear once the child has breathed. */
+export function breathingCard(): Activity {
+  return breathingActivity();
+}
+
+/** Both the plain ready check and the cards after breathing ask "ready?" with the same two choices. */
+export function isReadyQuestion(activityId: string): boolean {
+  return activityId === READY_CHECK_ID || activityId === BREATHING_ACTIVITY_ID;
+}
+
 export function isSocialCard(activityId: string): boolean {
-  return activityId === SUPPORT_OFFER_ID || activityId === READY_CHECK_ID;
+  return activityId === SUPPORT_OFFER_ID || isReadyQuestion(activityId);
 }
