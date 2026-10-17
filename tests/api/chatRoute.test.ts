@@ -94,6 +94,17 @@ describe("POST /api/chat", () => {
     expect(textOf(chunks)).toContain("You feel happy!");
   });
 
+  it("replaces a reply that praises a wrong answer with the scripted line", async () => {
+    const answered = { ...context, profile: { ...context.profile, level: 2 } };
+    mocks.loadTurnContext.mockResolvedValue(answered);
+    mocks.model = textModel("Great job! Tap the cat!");
+    const { chunks } = await run({ kind: "card", activityId: "l2.animals:listen-tap:x", choiceId: "nope", responseMs: 2000 });
+    const turn = chunks.find((c) => c.type === "data-turn")?.data as { fallbackLine: string };
+    expect(textOf(chunks)).toBe(turn.fallbackLine);
+    expect(textOf(chunks)).not.toMatch(/great job/i);
+    expect(mocks.persistTurn.mock.calls[0]?.[1]).toMatchObject({ fallback: true, correct: false, responseMs: 2000 });
+  });
+
   it("streams the scripted line when the first token is late", async () => {
     mocks.model = textModel("Too late to matter.", { initialDelayMs: FIRST_TOKEN_TIMEOUT_MS * 4 });
     const { chunks } = await run({ kind: "mood", mood: "HAPPY" });

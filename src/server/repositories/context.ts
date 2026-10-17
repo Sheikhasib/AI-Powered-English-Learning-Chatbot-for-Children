@@ -12,6 +12,8 @@ export type RecentTurn = {
   mood: Mood | null;
   activityId: string | null;
   correct: boolean | null;
+  /** How long the child took to tap, or null when the turn was not a card. */
+  responseMs: number | null;
   createdAt: Date;
 };
 
@@ -68,6 +70,7 @@ export async function loadTurnContext(
           mood: true,
           activityId: true,
           correct: true,
+          responseMs: true,
           createdAt: true,
         },
       },

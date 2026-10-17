@@ -31,6 +31,7 @@ const miss: RecentTurn = {
   mood: null,
   activityId: ACTIVITY_ID,
   correct: false,
+  responseMs: null,
   createdAt: NOW,
 };
 
@@ -51,6 +52,23 @@ describe("decideTurn", () => {
     expect(turn.stars).toBe(1);
     expect(turn.activity).not.toBeNull();
     expect(record.correct).toBe(false);
+  });
+
+  it("moves to Play after two fast taps in a row", () => {
+    const fastTurn: RecentTurn = { ...miss, responseMs: 300 };
+    const fastTap: ChatInput = { kind: "card", activityId: ACTIVITY_ID, choiceId: "other", responseMs: 300 };
+    expect(decide(fastTap, context([fastTurn])).turn.mode).toBe("PLAY");
+    expect(decide(fastTap, context([miss])).turn.mode).toBe("LEARN");
+  });
+
+  it("flags a wrong card so the reply may not praise the answer", () => {
+    expect(decide(tap("other")).prompt.wrongAnswer).toBe(true);
+    expect(decide(tap(target?.id ?? "")).prompt.wrongAnswer).toBe(false);
+  });
+
+  it("records how long the tap took", () => {
+    expect(decide(tap("other")).record.responseMs).toBe(2000);
+    expect(decide({ kind: "text", text: "hi" }, context(), "hi").record.responseMs).toBeNull();
   });
 
   it("gives extra stars for trying again after a miss", () => {

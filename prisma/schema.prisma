@@ -70,6 +70,7 @@ model Turn {
   mood        Mood?
   activityId  String?
   correct     Boolean?
+  responseMs  Int? // tap time on card turns, read back for the fast-guess rule
   fallback    Boolean  @default(false)
   safetyFlag  String?
   tGuard      Int

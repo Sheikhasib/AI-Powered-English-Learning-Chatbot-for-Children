@@ -6,6 +6,7 @@ import {
   LLM_PROVIDER_OPTIONS,
   getChatModel,
 } from "@/llm/provider";
+import { praisesAnswer } from "@/llm/praiseGuard";
 import { outputGuard } from "@/safety/outputGuard";
 import { logger } from "@/server/logger";
 import type { PipUIMessage } from "@/types/chat";
@@ -27,6 +28,8 @@ export type StreamArgs = {
   fallbackLine: string;
   /** The activity question Pip must end on; appended if the model left it out. */
   closingLine: string | null;
+  /** True after a wrong card: a sentence that praises the answer counts as a failed check. */
+  forbidPraise: boolean;
   firstTokenTimeoutMs: number;
   /** Called once, when the first token arrives or the fallback takes over. */
   onFirstToken: () => void;
@@ -90,6 +93,7 @@ export async function streamReply(args: StreamArgs): Promise<ReplyResult> {
     args.onFirstToken();
   };
   const accept = (sentence: string): boolean => {
+    if (args.forbidPraise && praisesAnswer(sentence)) return false;
     if (!outputGuard(`${out.text()} ${sentence}`).ok) return false;
     out.say(sentence);
     return true;

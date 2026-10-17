@@ -39,6 +39,7 @@ export type Decision = {
     inputKind: string;
     activityId: string | null;
     correct: boolean | null;
+    responseMs: number | null;
     safetyFlag: string | null;
     modeReason: string;
   };
@@ -139,7 +140,7 @@ export function decideTurn(args: DecideArgs): Decision {
     turnInputFor(args, text, redirect?.reason === "disclosure"),
     {
       skillStreak: graded?.skill.streak ?? 0,
-      previousFastGuess: false,
+      previousFastGuess: history.previousFastGuess,
       lastBotAt: history.lastBotAt,
       teachingStreak: history.teachingStreak,
       sessionStartedAt: ctx.session.startedAt,
@@ -175,13 +176,14 @@ export function decideTurn(args: DecideArgs): Decision {
       celebrate: Boolean(graded?.correct) || levelDecision.celebrate,
       stars,
     },
-    prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input, decision.mode, decision.mood), closingLine: closing },
+    prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input, decision.mode, decision.mood), closingLine: closing, wrongAnswer: event === "miss" },
     scripted: redirect !== null,
     record: {
       childInput: redirect ? NOT_SAVED : storedInput(input, text),
       inputKind: input.kind,
       activityId: input.kind === "card" ? input.activityId : null,
       correct: graded?.correct ?? null,
+      responseMs: input.kind === "card" ? input.responseMs : null,
       safetyFlag: safetyFlagFor(guard),
       modeReason,
     },

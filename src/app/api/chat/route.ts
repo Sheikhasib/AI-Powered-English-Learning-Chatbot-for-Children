@@ -141,6 +141,7 @@ function respond({ timer, ctx, decision, text, profileId, sessionId }: RespondAr
               messages: prompt.messages,
               fallbackLine: decision.turn.fallbackLine,
               closingLine: decision.turn.activity?.prompt ?? null,
+              forbidPraise: decision.prompt.wrongAnswer,
               firstTokenTimeoutMs: env.LLM_FIRST_TOKEN_TIMEOUT_MS,
               onFirstToken: () => timer.mark("t_first_token"),
             });

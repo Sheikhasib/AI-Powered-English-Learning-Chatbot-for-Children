@@ -67,6 +67,7 @@ function turn(partial: Partial<RecentTurn>): RecentTurn {
     mood: null,
     activityId: null,
     correct: null,
+    responseMs: null,
     createdAt: NOW,
     ...partial,
   };

@@ -5,7 +5,7 @@ import type { Mode, Mood } from "@/types/domain";
 const SITUATION: Record<FallbackEvent, string> = {
   correct: "The child tapped the right card. Praise their effort in one short sentence.",
   persisted: "The child kept trying and got it. Praise how they kept going.",
-  miss: "The child's card was not right yet. Be kind and cheer for another try. Do not say wrong.",
+  miss: "The child's card was not right yet. Be kind and cheer the brave try. Do not praise the answer and do not say wrong.",
   attempt: "The child gave it a brave try. Thank them for trying.",
   "level-up": "The child unlocked a new level. Celebrate their hard work.",
   start: "The child just showed you how they feel.",

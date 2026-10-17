@@ -1,3 +1,4 @@
+import { FAST_GUESS_MS } from "@/engine/config";
 import { INITIAL_MODE } from "@/engine/detectMode";
 import type { ActivityKind } from "@/engine/curriculum/types";
 import { ACTIVITY_KINDS } from "@/engine/curriculum/types";
@@ -9,6 +10,7 @@ export type DerivedHistory = {
   previous: PreviousMode;
   teachingStreak: number;
   lastMood: Mood | null;
+  previousFastGuess: boolean;
   lastBotAt: Date | null;
   recentKinds: ActivityKind[];
   recentItemIds: string[];
@@ -50,6 +52,7 @@ export function deriveHistory(ctx: TurnContext): DerivedHistory {
       : INITIAL_MODE,
     teachingStreak: leadingRun(turns, (turn) => turn.mode === "LEARN"),
     lastMood: newest?.mood ?? ctx.session.checkIn,
+    previousFastGuess: newest?.responseMs != null && newest.responseMs < FAST_GUESS_MS,
     lastBotAt: newest?.createdAt ?? null,
     recentKinds: parsed.map((entry) => entry.kind),
     recentItemIds: parsed.map((entry) => entry.itemId),

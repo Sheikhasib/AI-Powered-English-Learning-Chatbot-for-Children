@@ -18,7 +18,8 @@ describe("situationFor", () => {
   it("praises effort after a right card and encourages after a miss without saying wrong", () => {
     expect(situationFor("correct", card, "LEARN", "HAPPY")).toMatch(/praise/i);
     const miss = situationFor("miss", card, "LEARN", "OKAY");
-    expect(miss).toMatch(/another try/i);
+    expect(miss).toMatch(/brave try/i);
+    expect(miss).toMatch(/do not praise the answer/i);
     expect(miss).toMatch(/do not say wrong/i);
   });
 

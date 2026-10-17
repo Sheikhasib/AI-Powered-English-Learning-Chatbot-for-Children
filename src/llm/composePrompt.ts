@@ -1,5 +1,5 @@
 import type { AgeBand, Mode, Mood } from "@/types/domain";
-import { MODE_POLICY, PERSONA } from "./systemPrompt";
+import { MODE_POLICY, PERSONA, WRONG_ANSWER_RULE } from "./systemPrompt";
 
 /** The context block must stay under this many tokens (latency rule). */
 export const CONTEXT_TOKEN_BUDGET = 400;
@@ -36,6 +36,8 @@ export type PromptDecision = {
   situation: string;
   /** The exact line Pip must end with, or null when the reply may be free. */
   closingLine: string | null;
+  /** True after a card that was not right: the reply may not praise the answer. */
+  wrongAnswer: boolean;
 };
 
 export type PromptMessage = { role: "user" | "assistant"; content: string };
@@ -69,6 +71,7 @@ function systemFor(decision: PromptDecision): string {
     MODE_POLICY[decision.mode],
     `The child seems ${decision.mood.toLowerCase()}.`,
     decision.situation,
+    decision.wrongAnswer ? WRONG_ANSWER_RULE : "",
     decision.closingLine ? `End with exactly this line: "${decision.closingLine}"` : "",
   ];
   return parts.filter(Boolean).join("\n");

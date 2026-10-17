@@ -24,6 +24,7 @@ const learnDecision: PromptDecision = {
   mood: "HAPPY",
   situation: "The child answered correctly. Praise the effort in one short sentence.",
   closingLine: "Tap the cat!",
+  wrongAnswer: false,
 };
 
 const longHistory = Array.from({ length: 20 }, (_, i) => ({
@@ -78,6 +79,7 @@ describe("composePrompt", () => {
       mood: "SAD",
       situation: "The child feels sad.",
       closingLine: null,
+      wrongAnswer: false,
     });
     expect(system).toMatch(/comfort/i);
     expect(system).toMatch(/no teaching/i);
@@ -98,6 +100,13 @@ describe("buildContextBlock", () => {
       weakSkills: Array.from({ length: 10 }, (_, i) => `skill ${i} ${"z".repeat(100)}`),
     });
     expect(estimateTokens(block)).toBeLessThan(CONTEXT_TOKEN_BUDGET);
+  });
+
+  it("forbids praising the answer after a wrong card only", () => {
+    const wrong = composePrompt(baseContext, { ...learnDecision, wrongAnswer: true }).system;
+    expect(wrong).toMatch(/not right/i);
+    expect(wrong).toMatch(/brave try/i);
+    expect(composePrompt(baseContext, learnDecision).system).not.toMatch(/not right/i);
   });
 
   it("lists the nickname, age band, interests, level and weakest skills", () => {

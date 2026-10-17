@@ -14,6 +14,7 @@ export type TurnRecord = {
   mood: Mood;
   activityId: string | null;
   correct: boolean | null;
+  responseMs: number | null;
   fallback: boolean;
   safetyFlag: string | null;
   timings: { tGuard: number; tContext: number; tEngine: number; tFirstToken: number; tTotal: number };
