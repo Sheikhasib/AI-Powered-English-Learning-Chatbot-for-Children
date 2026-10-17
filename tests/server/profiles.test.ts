@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { ProfileInput } from "@/hooks/profileSchema";
@@ -75,6 +76,27 @@ describe("deleteProfile", () => {
 
     expect(tables.profile).toHaveLength(2);
     expect(tables.turn).toHaveLength(3);
+  });
+});
+
+/** Names of the schema's models that hold a profileId, as Prisma delegate keys ("SkillState" -> "skillState"). */
+function profileOwnedTables(): string[] {
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+  return [...schema.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm)]
+    .filter(([, name, body]) => name !== "Profile" && /^\s+profileId\s/m.test(body ?? ""))
+    .map(([, name = ""]) => name.charAt(0).toLowerCase() + name.slice(1));
+}
+
+describe("deleteProfile coverage", () => {
+  it("clears every table in the schema that stores a profile's data", async () => {
+    const owned = profileOwnedTables();
+    const tables = seed();
+    expect(Object.keys(tables).filter((name) => name !== "profile").sort()).toEqual([...owned].sort());
+
+    await deleteProfile(fakeDb(tables), "device-1", "mia");
+    for (const name of owned) {
+      expect(tables[name as keyof Tables].some((row) => row.profileId === "mia")).toBe(false);
+    }
   });
 });
 
