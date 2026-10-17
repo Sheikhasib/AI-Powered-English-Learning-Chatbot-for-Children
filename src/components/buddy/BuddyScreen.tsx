@@ -6,6 +6,7 @@ import { AnimatePresence } from "motion/react";
 import { Pip } from "@/components/pip/Pip";
 import { EXPRESSION_FOR_MODE, type PipExpression } from "@/components/pip/expressions";
 import { useBuddyChat } from "@/hooks/useBuddyChat";
+import { useBuddySounds } from "@/hooks/useBuddySounds";
 import type { Profile } from "@/hooks/profileSchema";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useSpeech, type SpokenWord } from "@/hooks/useSpeech";
@@ -44,6 +45,7 @@ export function BuddyScreen() {
 function BuddySession({ profile }: { profile: Profile }) {
   const chat = useBuddyChat();
   const speech = useSpeech();
+  const play = useBuddySounds(speech.muted, chat);
   const [spoken, setSpoken] = useState<{ key: string; word: SpokenWord } | null>(null);
 
   const checkingIn = chat.lineId === 0;
@@ -63,6 +65,14 @@ function BuddySession({ profile }: { profile: Profile }) {
   const expression: PipExpression =
     chat.status === "thinking" ? "thinking" : celebrating ? "celebrate" : checkingIn ? "chatty" : EXPRESSION_FOR_MODE[chat.mode];
   const word = spoken?.key === lineKey ? spoken.word : null;
+
+  /** Taps answer at once with a soft sound, before the reply arrives. */
+  const tapped =
+    <Args extends unknown[]>(action: (...args: Args) => void) =>
+    (...args: Args) => {
+      play("tap");
+      action(...args);
+    };
 
   const toggleListening = () =>
     speech.listening ? speech.stopListening() : speech.listen((text) => chat.sendText(text, "voice"));
@@ -99,13 +109,13 @@ function BuddySession({ profile }: { profile: Profile }) {
             locked={locked}
             feedback={chat.feedback}
             breathed={chat.breathed}
-            onMood={chat.sendMood}
-            onPick={chat.sendCard}
+            onMood={tapped(chat.sendMood)}
+            onPick={tapped(chat.sendCard)}
             onBreathDone={chat.finishBreathing}
           />
           <MoodBar
-            onMood={chat.sendMood}
-            onBreak={chat.sendBreak}
+            onMood={tapped(chat.sendMood)}
+            onBreak={tapped(chat.sendBreak)}
             restSuggested={chat.restSuggested}
           />
         </section>

@@ -43,7 +43,7 @@ export function TopBar({ stars, muted, mode, onToggleMute }: Props) {
       <button
         type="button"
         onClick={onToggleMute}
-        aria-label={muted ? "Turn Pip's voice on" : "Turn Pip's voice off"}
+        aria-label={muted ? "Turn sound on" : "Turn sound off"}
         aria-pressed={muted}
         className={roundButton}
       >
