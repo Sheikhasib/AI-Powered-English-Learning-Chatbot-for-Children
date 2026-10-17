@@ -64,3 +64,17 @@ export const MIN_TURNS_IN_SUPPORT = 2;
 
 /** Words in one message that count as free speech or a story. */
 export const STORY_MIN_WORDS = 8;
+
+/** Seconds to breathe in, and again to breathe out, in belly breathing. */
+export const BREATH_SECONDS = 4;
+
+/** Breaths in one belly-breathing round. */
+export const BREATH_CYCLES = 3;
+
+/** Things to find in the "count five things you can see" game. */
+export const COUNT_THINGS = 5;
+
+/** Brave-try stars: any attempt, a correct answer, and trying again after a miss. */
+export const STARS_FOR_ATTEMPT = 1;
+export const STARS_FOR_CORRECT = 1;
+export const STARS_FOR_RETRY_AFTER_MISS = 2;
