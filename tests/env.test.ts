@@ -4,8 +4,8 @@ import { parseEnv } from "@/lib/env";
 const valid = {
   DATABASE_URL: "postgres://user:pass@host:5432/db",
   OPENCODE_API_KEY: "test-key",
-  UPSTASH_REDIS_REST_URL: "https://example.upstash.io",
-  UPSTASH_REDIS_REST_TOKEN: "test-token",
+  KV_REST_API_URL: "https://example.upstash.io",
+  KV_REST_API_TOKEN: "test-token",
   PARENT_GATE_SECRET: "0123456789abcdef",
 };
 
@@ -38,7 +38,7 @@ describe("parseEnv", () => {
   });
 
   it("never puts a secret value in the error message", () => {
-    expect(() => parseEnv({ ...valid, PARENT_GATE_SECRET: "short", UPSTASH_REDIS_REST_URL: "nope" })).toThrowError(
+    expect(() => parseEnv({ ...valid, PARENT_GATE_SECRET: "short", KV_REST_API_URL: "nope" })).toThrowError(
       expect.objectContaining({ message: expect.not.stringContaining("short") }),
     );
   });

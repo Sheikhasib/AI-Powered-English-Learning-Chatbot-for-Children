@@ -9,7 +9,7 @@ let limiter: Ratelimit | undefined;
 
 function getChatLimiter(): Ratelimit {
   limiter ??= new Ratelimit({
-    redis: new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN }),
+    redis: new Redis({ url: env.KV_REST_API_URL, token: env.KV_REST_API_TOKEN }),
     limiter: Ratelimit.slidingWindow(CHAT_TURNS_PER_WINDOW, CHAT_WINDOW),
     prefix: "pip:chat",
   });

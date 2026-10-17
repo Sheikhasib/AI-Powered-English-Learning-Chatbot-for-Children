@@ -8,8 +8,8 @@ const envSchema = z.object({
   LLM_BASE_URL: z.url().default("https://opencode.ai/zen/v1"),
   LLM_MODEL: z.string().min(1).default("big-pickle"),
   LLM_FIRST_TOKEN_TIMEOUT_MS: z.coerce.number().int().positive().default(1200),
-  UPSTASH_REDIS_REST_URL: z.url(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+  KV_REST_API_URL: z.url(),
+  KV_REST_API_TOKEN: z.string().min(1),
   PARENT_GATE_SECRET: z.string().min(MIN_SECRET_LENGTH),
 });
 
