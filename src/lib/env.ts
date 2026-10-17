@@ -5,7 +5,7 @@ const MIN_SECRET_LENGTH = 16;
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   OPENCODE_API_KEY: z.string().min(1),
-  LLM_BASE_URL: z.url().default("https://opencode.ai/zen/v1"),
+  LLM_BASE_URL: z.url().default("https://opencode.ai/inference/openai/v1"),
   LLM_MODEL: z.string().min(1).default("big-pickle"),
   LLM_FIRST_TOKEN_TIMEOUT_MS: z.coerce.number().int().positive().default(1200),
   KV_REST_API_URL: z.url(),

@@ -82,7 +82,7 @@ All read through `src/lib/env.ts` (Zod-validated, server-only unless prefixed `N
 |---|---|
 | `DATABASE_URL` | Prisma Postgres connection string |
 | `OPENCODE_API_KEY` | LLM key (server only) |
-| `LLM_BASE_URL` | OpenAI-compatible base URL, default `https://opencode.ai/zen/v1` |
+| `LLM_BASE_URL` | OpenAI-compatible base URL, default `https://opencode.ai/inference/openai/v1` |
 | `LLM_MODEL` | Model id, default `big-pickle` |
 | `LLM_FIRST_TOKEN_TIMEOUT_MS` | Fallback trigger, default `1200` |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Rate limiting |

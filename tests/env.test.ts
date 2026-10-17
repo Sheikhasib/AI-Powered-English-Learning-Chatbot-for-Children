@@ -12,7 +12,7 @@ const valid = {
 describe("parseEnv", () => {
   it("fills defaults for the optional LLM settings", () => {
     const env = parseEnv(valid);
-    expect(env.LLM_BASE_URL).toBe("https://opencode.ai/zen/v1");
+    expect(env.LLM_BASE_URL).toBe("https://opencode.ai/inference/openai/v1");
     expect(env.LLM_MODEL).toBe("big-pickle");
     expect(env.LLM_FIRST_TOKEN_TIMEOUT_MS).toBe(1200);
   });
