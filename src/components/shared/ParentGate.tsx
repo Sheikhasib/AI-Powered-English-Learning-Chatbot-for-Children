@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { makeSum } from "./gateSum";
 
 const HOLD_MS = 2000;
+const FOCUSABLE = "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])";
 
 type Challenge = { question: string; options: number[]; answer?: number; token?: string };
 
@@ -39,12 +40,35 @@ export function ParentGate({ onPass, onClose, server = false }: Props) {
   const [missed, setMissed] = useState(false);
   const [holding, setHolding] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialog = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const opener = document.activeElement;
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (timer.current) clearTimeout(timer.current);
+      if (opener instanceof HTMLElement) opener.focus();
+    };
   }, [onClose]);
+
+  /** Keeps Tab and Shift+Tab inside the dialog so keyboard users cannot reach the page behind it. */
+  const trapFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab" || !dialog.current) return;
+    const items = [...dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (!first || !last) return;
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !dialog.current.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !dialog.current.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   const startHold = () => {
     setHolding(true);
@@ -71,6 +95,8 @@ export function ParentGate({ onPass, onClose, server = false }: Props) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4">
       <div
+        ref={dialog}
+        onKeyDown={trapFocus}
         role="dialog"
         aria-modal="true"
         aria-label="Grown-ups only"
