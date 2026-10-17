@@ -43,3 +43,24 @@ export const MAX_SAME_KIND_IN_ROW = 2;
 
 /** How many recently taught items the picker avoids repeating. */
 export const RECENT_ITEMS_MEMORY = 2;
+
+/** A card tapped faster than this (ms) was probably a guess, not a thought. */
+export const FAST_GUESS_MS = 700;
+
+/** Silence after Pip's last line (ms) before Pip suggests something playful. */
+export const SILENCE_PLAY_MS = 20_000;
+
+/** Session length (minutes) after which Pip suggests a calm break. */
+export const BREAK_AFTER_MINUTES = 15;
+
+/** Wrong answers in a row that move Pip into Support. */
+export const WRONG_STREAK_SUPPORT = 3;
+
+/** Correct answers in a row that let us infer a happy mood. */
+export const CORRECT_STREAK_HAPPY = 3;
+
+/** Turns Pip stays in Support or Calm before leaving, unless the child says they are ready. */
+export const MIN_TURNS_IN_SUPPORT = 2;
+
+/** Words in one message that count as free speech or a story. */
+export const STORY_MIN_WORDS = 8;
