@@ -11,7 +11,7 @@ Target: first spoken word under 1 s and the full reply under 2 s (p95), measured
 | Where | Runs | firstTokenMs | Median |
 |---|---|---|---|
 | Local (Dhaka) | 4 | 585, 475, 149, 477 | about 480 |
-| Live (sin1) | 5 | _to fill_ | _to fill_ |
+| Live (sin1) | 5 | 300, 96, 116, 71, 154 (totalMs 510, 200, 132, 90, 175) | 116 |
 
 ## Chat turns (`/api/chat`, live)
 
