@@ -44,7 +44,7 @@ export function BuddyScreen() {
 }
 
 function BuddySession({ profile }: { profile: Profile }) {
-  const chat = useBuddyChat();
+  const chat = useBuddyChat(profile.id);
   const speech = useSpeech();
   const play = useBuddySounds(speech.muted, chat);
   const [spoken, setSpoken] = useState<{ key: string; word: SpokenWord } | null>(null);

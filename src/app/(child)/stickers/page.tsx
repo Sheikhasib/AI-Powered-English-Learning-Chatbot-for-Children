@@ -1,9 +1,7 @@
 import { Suspense } from "react";
 import { ScreenHeader } from "@/components/buddy/ScreenHeader";
-import { StickerBook } from "@/components/buddy/StickerBook";
+import { StickersContent } from "@/components/buddy/StickersContent";
 import { backHref, profileIdFrom } from "@/components/buddy/links";
-import { earnedStickers } from "@/components/buddy/progressView";
-import { mockSkillStates } from "../mockProgress";
 
 const FRAME = "mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-4 bg-mode-chat px-4 py-3";
 
@@ -13,7 +11,7 @@ async function StickersScreen({ searchParams }: Pick<PageProps<"/stickers">, "se
   return (
     <main className={FRAME}>
       <ScreenHeader backHref={backHref(profileId)} title="My stickers" />
-      <StickerBook stickers={earnedStickers(mockSkillStates())} />
+      <StickersContent profileId={profileId} />
     </main>
   );
 }

@@ -1,56 +1,46 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
-import {
-  MAX_PROFILES_PER_DEVICE,
-  profileSchema,
-  type Profile,
-  type ProfileInput,
-} from "./profileSchema";
+import { profileSchema, type Profile, type ProfileInput } from "./profileSchema";
+
+const profilesResponse = z.object({ profiles: z.array(profileSchema) });
+const createdResponse = z.object({ profile: profileSchema });
 
 /**
- * Profiles live in this browser until the profile API exists. Only the four
- * allowed fields are stored, never anything about the child's voice or words.
+ * Profiles live on the server, tied to this device's cookie. `profiles` is null
+ * until the first answer arrives, so screens can wait quietly; a failed read
+ * counts as no profiles, because the child never sees an error.
  */
-const STORAGE_KEY = "pip.profiles";
-const listeners = new Set<() => void>();
-let cached: { raw: string | null; profiles: Profile[] } = { raw: null, profiles: [] };
-
-function readProfiles(): Profile[] {
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (raw === cached.raw) return cached.profiles;
-  let profiles: Profile[] = [];
-  try {
-    const parsed = z.array(profileSchema).safeParse(JSON.parse(raw ?? "[]"));
-    if (parsed.success) profiles = parsed.data;
-  } catch {
-    profiles = [];
-  }
-  cached = { raw, profiles };
-  return profiles;
-}
-
-function subscribe(onChange: () => void): () => void {
-  listeners.add(onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    listeners.delete(onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
-
-/** `profiles` is null on the server and during hydration, so screens can wait quietly. */
 export function useProfiles() {
-  const profiles = useSyncExternalStore(subscribe, readProfiles, () => null);
+  const [profiles, setProfiles] = useState<Profile[] | null>(null);
 
-  const addProfile = useCallback((input: ProfileInput): Profile | null => {
-    const current = readProfiles();
-    if (current.length >= MAX_PROFILES_PER_DEVICE) return null;
-    const profile: Profile = { ...input, id: crypto.randomUUID() };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...current, profile]));
-    listeners.forEach((notify) => notify());
-    return profile;
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/profile", { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("profile list failed"))))
+      .then((json) => setProfiles(profilesResponse.parse(json).profiles))
+      .catch(() => {
+        if (!controller.signal.aborted) setProfiles([]);
+      });
+    return () => controller.abort();
+  }, []);
+
+  /** Returns the new profile, or null when the device is full or the server could not save it. */
+  const addProfile = useCallback(async (input: ProfileInput): Promise<Profile | null> => {
+    try {
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) return null;
+      const { profile } = createdResponse.parse(await res.json());
+      setProfiles((current) => [...(current ?? []), profile]);
+      return profile;
+    } catch {
+      return null;
+    }
   }, []);
 
   return { profiles, addProfile };

@@ -1,12 +1,14 @@
 "use client";
 
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Activity } from "@/engine/curriculum/types";
-import type { LevelId } from "@/engine/curriculum/types";
+import { curriculum } from "@/engine/curriculum";
+import type { Activity, LevelId } from "@/engine/curriculum/types";
 import { readyCheck } from "@/engine/sel/support";
-import { createMockTurnSource, type ChatInput, type TurnData } from "@/lib/mockTurn";
+import type { ChatInput, ChatRequest, PipUIMessage, TurnData } from "@/types/chat";
 import type { Mode, Mood } from "@/types/domain";
-import { unlockedLevel } from "./levelUp";
+import { startSession } from "./startSession";
 
 /** How long a right answer stays on screen before the next cards appear. */
 const CELEBRATE_HOLD_MS = 1100;
@@ -57,15 +59,22 @@ const INITIAL: BuddyState = {
   levelUp: null,
 };
 
-/**
- * Drives the buddy screen from a turn source. Today that is the mock; the real
- * API swaps in by changing the `createMockTurnSource` call below.
- */
-export function useBuddyChat() {
+/** The request body is built per send, so the transport only forwards it. */
+const transport = new DefaultChatTransport<PipUIMessage>({
+  api: "/api/chat",
+  prepareSendMessagesRequest: ({ body }) => ({ body: body ?? {} }),
+});
+
+const levelFrom = (id: number): LevelId | null => curriculum.find((level) => level.id === id)?.id ?? null;
+
+/** Drives the buddy screen from POST /api/chat: the first stream part shows cards at once, the text follows. */
+export function useBuddyChat(profileId: string) {
   const [state, setState] = useState<BuddyState>(INITIAL);
-  const [source] = useState(createMockTurnSource);
   const shownAt = useRef(0);
   const busy = useRef(false);
+  const sessionId = useRef<string | null>(null);
+  const turnSeen = useRef(false);
+  const lastTurn = useRef<TurnData | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -94,11 +103,8 @@ export function useBuddyChat() {
         const held = turn.celebrate && s.feedback !== null;
         return {
           ...s,
-          pipLine: turn.fallbackLine,
-          lineId: s.lineId + 1,
           mode: turn.mode,
           breathed: false,
-          status: "ready",
           stars: s.stars + turn.stars,
           bursts: turn.celebrate ? s.bursts + 1 : s.bursts,
           activity: held ? s.activity : turn.activity,
@@ -112,7 +118,7 @@ export function useBuddyChat() {
             ...s,
             activity: turn.activity,
             feedback: null,
-            levelUp: unlockedLevel(turn.reason) ?? s.levelUp,
+            levelUp: (turn.levelUp && levelFrom(turn.levelUp.to)) || s.levelUp,
           }));
         }, CELEBRATE_HOLD_MS);
       } else {
@@ -123,13 +129,52 @@ export function useBuddyChat() {
     [later],
   );
 
+  /** Pip's words arrive sentence by sentence; the bubble shows them once the reply is whole. */
+  const sayReply = useCallback((text: string) => {
+    const turn = lastTurn.current;
+    setState((s) => ({
+      ...s,
+      pipLine: text || turn?.fallbackLine || s.pipLine,
+      lineId: s.lineId + 1,
+      status: "ready",
+    }));
+  }, []);
+
+  const { sendMessage, setMessages } = useChat<PipUIMessage>({
+    transport,
+    onData: (part) => {
+      if (part.type !== "data-turn") return;
+      turnSeen.current = true;
+      lastTurn.current = part.data;
+      applyTurn(part.data);
+    },
+    onFinish: ({ message, isError }) => {
+      if (isError) return;
+      const text = message.parts.flatMap((part) => (part.type === "text" ? part.text : [])).join(" ");
+      sayReply(text.trim());
+    },
+  });
+
+  /** One attempt: make sure a session exists, then stream the turn. Returns false when Pip could not answer. */
   const request = useCallback(
     async (input: ChatInput): Promise<boolean> => {
       setState((s) => ({ ...s, status: "thinking" }));
+      turnSeen.current = false;
       try {
-        applyTurn(await source(input));
+        sessionId.current ??= await startSession({
+          profileId,
+          checkIn: input.kind === "mood" ? input.mood : null,
+        });
+        const body: ChatRequest = { profileId, sessionId: sessionId.current, input };
+        setMessages([]);
+        await sendMessage({ text: input.kind }, { body });
         return true;
       } catch {
+        // A turn that already reached the screen must not be sent twice.
+        if (turnSeen.current) {
+          sayReply("");
+          return true;
+        }
         setState((s) => ({
           ...s,
           pipLine: RESTING_LINE,
@@ -140,7 +185,7 @@ export function useBuddyChat() {
         return false;
       }
     },
-    [source, applyTurn],
+    [profileId, sendMessage, setMessages, sayReply],
   );
 
   const send = useCallback(
