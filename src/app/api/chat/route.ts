@@ -1,6 +1,7 @@
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { cookies } from "next/headers";
 import { after } from "next/server";
+import { z } from "zod";
 import { getSkill } from "@/engine/curriculum";
 import { createRng } from "@/engine/rng";
 import { env } from "@/lib/env";
@@ -31,6 +32,12 @@ function parseJson(raw: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** The cookie is client-controlled, so only a well-formed id counts; a made-up one cannot dodge the per-device limit. */
+function deviceIdFrom(value: string | undefined): string | null {
+  const parsed = z.guid().safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 function clientIp(request: Request): string {
@@ -78,15 +85,17 @@ function guardedText(kindIsText: boolean, text: string): { guard: InputGuardResu
 /** One child turn: guard, one read, the engine, then a stream whose first part is the engine's decision. */
 export async function POST(request: Request) {
   const timer = createTimer();
-  const deviceId = (await cookies()).get(DEVICE_COOKIE)?.value;
+  const deviceId = deviceIdFrom((await cookies()).get(DEVICE_COOKIE)?.value);
   if (!deviceId) return failure(401, "no_device", "Pip does not know this device yet.");
 
   if (!(await isUnderLimit(deviceId, clientIp(request)))) {
     return failure(429, "rate_limited", "Pip needs a little rest.", { "Retry-After": String(RATE_LIMIT_RETRY_SECONDS) });
   }
 
+  const declared = Number(request.headers.get("content-length"));
+  if (declared > MAX_BODY_BYTES) return failure(413, "too_large", "That message is too big.");
   const raw = await request.text();
-  if (raw.length > MAX_BODY_BYTES) return failure(413, "too_large", "That message is too big.");
+  if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) return failure(413, "too_large", "That message is too big.");
   const body = chatRequestSchema.safeParse(parseJson(raw));
   if (!body.success) return failure(400, "invalid_request", "Pip could not read that.");
   const { profileId, sessionId, input } = body.data;
@@ -141,7 +150,7 @@ function respond({ timer, ctx, decision, text, profileId, sessionId }: RespondAr
               messages: prompt.messages,
               fallbackLine: decision.turn.fallbackLine,
               closingLine: decision.turn.activity?.prompt ?? null,
-              forbidPraise: decision.prompt.wrongAnswer || decision.turn.mode === "SUPPORT" || decision.turn.mode === "CALM",
+              forbidPraise: !decision.prompt.praiseAllowed,
               firstTokenTimeoutMs: env.LLM_FIRST_TOKEN_TIMEOUT_MS,
               onFirstToken: () => timer.mark("t_first_token"),
             });

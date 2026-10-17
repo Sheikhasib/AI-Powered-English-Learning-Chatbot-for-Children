@@ -71,6 +71,7 @@ const textOf = (chunks: Array<Record<string, unknown>>) =>
 
 beforeEach(() => {
   mocks.cookie = "6f1d3c1e-5b7a-4c1e-9a52-0d3b1b0c7a11";
+  mocks.allow.mockClear();
   mocks.allow.mockResolvedValue(true);
   mocks.loadTurnContext.mockResolvedValue(context);
   mocks.persistTurn.mockClear();
@@ -93,6 +94,22 @@ describe("POST /api/chat", () => {
     mocks.model = textModel("You feel happy! Tap the dog!");
     const { chunks } = await run({ kind: "mood", mood: "HAPPY" });
     expect(textOf(chunks)).toContain("You feel happy!");
+  });
+
+  it("replaces praise after a mood tap, where no card was answered", async () => {
+    mocks.model = textModel("Great job tapping the card! Tap the dog!");
+    const { chunks } = await run({ kind: "mood", mood: "HAPPY" });
+    const turn = chunks.find((c) => c.type === "data-turn")?.data as { fallbackLine: string };
+    expect(textOf(chunks)).toBe(turn.fallbackLine);
+    expect(textOf(chunks)).not.toMatch(/great job|tapping the card/i);
+  });
+
+  it("keeps praise after a right card", async () => {
+    const item = getSkill("l2.animals")?.items[0];
+    mocks.loadTurnContext.mockResolvedValue({ ...context, profile: { ...context.profile, level: 2 } });
+    mocks.model = textModel("Great job!");
+    const { chunks } = await run({ kind: "card", activityId: `l2.animals:listen-tap:${item?.id}`, choiceId: item?.id ?? "", responseMs: 2000 });
+    expect(textOf(chunks)).toContain("Great job!");
   });
 
   it("replaces a reply that praises a wrong answer with the scripted line", async () => {
@@ -209,6 +226,36 @@ describe("POST /api/chat", () => {
     expect((await POST(chatRequest({ kind: "text", text: "a".repeat(301) }))).status).toBe(400);
     mocks.cookie = undefined;
     expect((await POST(chatRequest({ kind: "break" }))).status).toBe(401);
+  });
+
+  it("rejects by Content-Length before reading a body that claims to be over 2 KB", async () => {
+    const request = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-length": "5000" },
+      body: JSON.stringify({ profileId: PROFILE_ID, sessionId: SESSION_ID, input: { kind: "break" } }),
+    });
+    const textSpy = vi.spyOn(request, "text");
+    expect((await POST(request)).status).toBe(413);
+    expect(textSpy).not.toHaveBeenCalled();
+  });
+
+  it("counts real bytes, so a short multi-byte message over 2 KB is rejected", async () => {
+    const text = "€".repeat(800);
+    expect(text.length).toBeLessThan(2048);
+    const body = JSON.stringify({ profileId: PROFILE_ID, sessionId: SESSION_ID, input: { kind: "text", text } });
+    expect((await POST(chatRequest({}, body))).status).toBe(413);
+  });
+
+  it("accepts a body just under 2 KB", async () => {
+    expect((await POST(chatRequest({ kind: "break" }))).status).toBe(200);
+  });
+
+  it("treats a device cookie that is not a UUID as no device", async () => {
+    for (const value of ["not-a-uuid", "../../etc/passwd", "6f1d3c1e-5b7a-4c1e-9a52-0d3b1b0c7a1"]) {
+      mocks.cookie = value;
+      expect((await POST(chatRequest({ kind: "break" }))).status).toBe(401);
+    }
+    expect(mocks.allow).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the profile or session is not this device's", async () => {
