@@ -1,0 +1,129 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Single source of truth for the design system (spec 10).
+ * shadcn's variable names are mapped onto Pip's palette, so shadcn components
+ * and our own components read the same tokens. Light theme only.
+ */
+:root {
+  --background: #fff8ee;
+  --foreground: #2d2a4a;
+  --card: #ffffff;
+  --card-foreground: #2d2a4a;
+  --popover: #ffffff;
+  --popover-foreground: #2d2a4a;
+  --primary: #167570;
+  --primary-foreground: #ffffff;
+  --secondary: #f3ede3;
+  --secondary-foreground: #2d2a4a;
+  --muted: #f3ede3;
+  --muted-foreground: #5e5a78;
+  --accent: #ffc93c;
+  --accent-foreground: #2d2a4a;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: #e8dfd1;
+  --input: #e8dfd1;
+  --ring: #167570;
+
+  --success: #2e9e6a;
+  --success-soft: #e3f6ec;
+  --gentle: #f08a6b;
+  --gentle-soft: #ffe9e1;
+
+  --mode-learn: #e6f4ff;
+  --mode-chat: #f1ebff;
+  --mode-play: #fff4cc;
+  --mode-support: #ffe9e1;
+  --mode-calm: #e5f7ef;
+
+  --pip-body: #8f79d6;
+  --pip-belly: #f6e7d3;
+  --pip-beak: #f5a623;
+  --pip-eyes: #2d2a4a;
+
+  --radius: 1.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-gentle: var(--gentle);
+  --color-gentle-soft: var(--gentle-soft);
+
+  --color-mode-learn: var(--mode-learn);
+  --color-mode-chat: var(--mode-chat);
+  --color-mode-play: var(--mode-play);
+  --color-mode-support: var(--mode-support);
+  --color-mode-calm: var(--mode-calm);
+
+  --color-pip-body: var(--pip-body);
+  --color-pip-belly: var(--pip-belly);
+  --color-pip-beak: var(--pip-beak);
+  --color-pip-eyes: var(--pip-eyes);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.67);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.33);
+  --radius-2xl: calc(var(--radius) * 1.67);
+
+  --font-sans: var(--font-andika), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  /* Child area type scale */
+  --text-bubble: 1.625rem;
+  --text-bubble--line-height: 1.35;
+  --text-label: 1.375rem;
+  --text-label--line-height: 1.25;
+  /* Grown-up area type scale */
+  --text-meta: 0.875rem;
+  --text-meta--line-height: 1.4;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-heading: 1.5rem;
+  --text-heading--line-height: 1.3;
+
+  /* Motion: springs stay low-bounce, durations 150 to 400 ms */
+  --duration-quick: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
