@@ -16,6 +16,18 @@ export const AVATAR_FACES: Record<AvatarId, string> = {
   frog: "🐸",
 };
 
+/** Spoken names for screen readers; the emoji alone would read as "bear face". */
+export const AVATAR_LABELS: Record<AvatarId, string> = {
+  bear: "Bear",
+  cat: "Cat",
+  dog: "Dog",
+  rabbit: "Rabbit",
+  fox: "Fox",
+  panda: "Panda",
+  lion: "Lion",
+  frog: "Frog",
+};
+
 export const INTEREST_LABELS: Record<InterestId, { icon: string; word: string }> = {
   animals: { icon: "🐾", word: "animals" },
   space: { icon: "🚀", word: "space" },

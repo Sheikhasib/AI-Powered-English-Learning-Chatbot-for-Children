@@ -16,7 +16,7 @@ import {
 import { useProfiles } from "@/hooks/useProfiles";
 import { AGE_BANDS } from "@/types/domain";
 import { cn } from "@/lib/utils";
-import { AGE_BAND_LABELS, AVATAR_FACES, INTEREST_LABELS } from "./avatars";
+import { AGE_BAND_LABELS, AVATAR_FACES, AVATAR_LABELS, INTEREST_LABELS } from "./avatars";
 
 const chip =
   "inline-flex h-16 items-center justify-center gap-2 rounded-full border-2 px-5 text-label font-bold transition-colors duration-(--duration-quick) active:scale-[0.96] motion-reduce:active:scale-100";
@@ -121,7 +121,7 @@ export function ProfileForm() {
               <button
                 key={id}
                 type="button"
-                aria-label={id}
+                aria-label={AVATAR_LABELS[id]}
                 aria-pressed={draft.avatar === id}
                 onClick={() => setDraft((d) => ({ ...d, avatar: id }))}
                 className={cn(
