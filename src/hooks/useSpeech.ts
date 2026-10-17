@@ -5,8 +5,9 @@ import {
   canSpeak,
   getRecognitionCtor,
   pickVoice,
-  splitSentences,
+  newSentences,
   type Recognition,
+  type SentenceChunk,
 } from "./speechSupport";
 
 /** Child-friendly delivery from the design system: a little slower, a little brighter. */
@@ -22,6 +23,11 @@ type SpeakOptions = {
   /** Called as each word starts, with its character range in the full line. */
   onWord?: (word: SpokenWord) => void;
   onEnd?: () => void;
+};
+
+export type SpokenLine = {
+  add: (sentence: SentenceChunk) => void;
+  close: () => void;
 };
 
 const subscribeNothing = () => () => {};
@@ -61,16 +67,19 @@ export function useSpeech() {
     setSpeaking(false);
   }, []);
 
-  const speak = useCallback(
-    (text: string, { onWord, onEnd }: SpeakOptions = {}) => {
+  /**
+   * Opens a line that can grow: each `add` queues one sentence as its own utterance, so speech
+   * starts on the first sentence and never restarts. `close` says no more sentences are coming.
+   */
+  const beginLine = useCallback(
+    ({ onWord, onEnd }: SpeakOptions = {}): SpokenLine => {
       cancel();
-      if (!canSpeak() || mutedRef.current) {
-        onEnd?.();
-        return;
-      }
       const run = runRef.current;
-      const sentences = splitSentences(text);
-      let offset = 0;
+      const live = canSpeak() && !mutedRef.current;
+      let queued = 0;
+      let finished = 0;
+      let chars = 0;
+      let closed = !live;
       let done = false;
       const finish = () => {
         if (done || run !== runRef.current) return;
@@ -78,31 +87,54 @@ export function useSpeech() {
         setSpeaking(false);
         onEnd?.();
       };
+      const settle = () => {
+        if (closed && finished >= queued) finish();
+      };
       // Some browsers never fire `end`; this keeps the cards from staying locked.
-      setTimeout(finish, text.length * WATCHDOG_MS_PER_CHAR + WATCHDOG_BASE_MS);
-      setSpeaking(true);
-      sentences.forEach((sentence, index) => {
-        const utterance = new SpeechSynthesisUtterance(sentence);
-        const base = offset;
-        utterance.rate = SPEECH_RATE;
-        utterance.pitch = SPEECH_PITCH;
-        utterance.lang = "en-US";
-        if (voiceRef.current) utterance.voice = voiceRef.current;
-        utterance.onboundary = (event) => {
-          if (run !== runRef.current || event.name !== "word") return;
-          const length = event.charLength || sentence.slice(event.charIndex).search(/\s|$/);
-          onWord?.({ start: base + event.charIndex, end: base + event.charIndex + length });
-        };
-        const finished = () => {
-          if (index === sentences.length - 1) finish();
-        };
-        utterance.onend = finished;
-        utterance.onerror = finished;
-        window.speechSynthesis.speak(utterance);
-        offset += sentence.length;
-      });
+      const watchdog = () => setTimeout(finish, chars * WATCHDOG_MS_PER_CHAR + WATCHDOG_BASE_MS);
+      if (live) setSpeaking(true);
+      else queueMicrotask(finish);
+
+      return {
+        add: ({ text, offset }: SentenceChunk) => {
+          if (!live || done || run !== runRef.current) return;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = SPEECH_RATE;
+          utterance.pitch = SPEECH_PITCH;
+          utterance.lang = "en-US";
+          if (voiceRef.current) utterance.voice = voiceRef.current;
+          utterance.onboundary = (event) => {
+            if (run !== runRef.current || event.name !== "word") return;
+            const length = event.charLength || text.slice(event.charIndex).search(/\s|$/);
+            onWord?.({ start: offset + event.charIndex, end: offset + event.charIndex + length });
+          };
+          const ended = () => {
+            finished += 1;
+            settle();
+          };
+          utterance.onend = ended;
+          utterance.onerror = ended;
+          queued += 1;
+          chars += text.length;
+          window.speechSynthesis.speak(utterance);
+        },
+        close: () => {
+          closed = true;
+          if (live) watchdog();
+          settle();
+        },
+      };
     },
     [cancel],
+  );
+
+  const speak = useCallback(
+    (text: string, options?: SpeakOptions) => {
+      const line = beginLine(options);
+      newSentences(text, 0).chunks.forEach(line.add);
+      line.close();
+    },
+    [beginLine],
   );
 
   const stopListening = useCallback(() => recognitionRef.current?.stop(), []);
@@ -143,6 +175,7 @@ export function useSpeech() {
     speaking,
     listening,
     speak,
+    beginLine,
     cancel,
     listen,
     stopListening,

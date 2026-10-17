@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "motion/react";
 import { Pip } from "@/components/pip/Pip";
@@ -9,7 +9,8 @@ import { useBuddyChat } from "@/hooks/useBuddyChat";
 import { useBuddySounds } from "@/hooks/useBuddySounds";
 import type { Profile } from "@/hooks/profileSchema";
 import { useProfiles } from "@/hooks/useProfiles";
-import { useSpeech, type SpokenWord } from "@/hooks/useSpeech";
+import { newSentences } from "@/hooks/speechSupport";
+import { useSpeech, type SpokenLine, type SpokenWord } from "@/hooks/useSpeech";
 import type { Mode } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import { ActivityArea } from "./ActivityArea";
@@ -52,14 +53,29 @@ function BuddySession({ profile }: { profile: Profile }) {
   const checkingIn = chat.lineId === 0;
   const line = checkingIn ? `Hi ${profile.nickname}! How do you feel?` : chat.pipLine;
   const lineKey = `line-${chat.lineId}`;
-  const { speak } = speech;
+  const lineDone = checkingIn || chat.lineDone;
+  const { beginLine } = speech;
+  const spokenLine = useRef<SpokenLine | null>(null);
+  const consumed = useRef(0);
 
+  // Speech follows the line as it grows: one utterance per sentence, the first starts at once.
   useEffect(() => {
-    speak(line, {
+    consumed.current = 0;
+    spokenLine.current = beginLine({
       onWord: (word) => setSpoken({ key: lineKey, word }),
       onEnd: () => setSpoken(null),
     });
-  }, [speak, line, lineKey]);
+  }, [beginLine, lineKey]);
+
+  useEffect(() => {
+    const next = newSentences(line, consumed.current);
+    consumed.current = next.consumed;
+    next.chunks.forEach((chunk) => spokenLine.current?.add(chunk));
+  }, [line, lineKey]);
+
+  useEffect(() => {
+    if (lineDone) spokenLine.current?.close();
+  }, [lineDone, lineKey]);
 
   const locked = speech.speaking || chat.status === "thinking";
   const celebrating = chat.feedback?.kind === "correct";

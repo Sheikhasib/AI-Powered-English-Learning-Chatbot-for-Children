@@ -44,3 +44,15 @@ export function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice 
 export function splitSentences(text: string): string[] {
   return text.match(/[^.!?]+[.!?]*\s*/g) ?? [text];
 }
+
+export type SentenceChunk = { text: string; /** Where the sentence starts in the full line. */ offset: number };
+
+/** The sentences added to `text` after the first `consumed` characters, each with its place in the full line. */
+export function newSentences(text: string, consumed: number): { chunks: SentenceChunk[]; consumed: number } {
+  const chunks: SentenceChunk[] = [];
+  for (const match of text.slice(consumed).matchAll(/[^.!?]+[.!?]*\s*/g)) {
+    const spoken = match[0].trim();
+    if (spoken) chunks.push({ text: spoken, offset: consumed + match.index + match[0].length - match[0].trimStart().length });
+  }
+  return { chunks, consumed: text.length };
+}

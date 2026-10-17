@@ -28,6 +28,8 @@ export type CardFeedback = { choiceId: string; kind: "chosen" | "correct" | "try
 
 type BuddyState = {
   pipLine: string;
+  /** False while Pip's words are still streaming in; true once the line is whole. */
+  lineDone: boolean;
   /** Changes on every new line, so speech restarts even when the words repeat. */
   lineId: number;
   mode: Mode;
@@ -47,6 +49,7 @@ type BuddyState = {
 
 const INITIAL: BuddyState = {
   pipLine: "",
+  lineDone: true,
   lineId: 0,
   mode: "LEARN",
   activity: null,
@@ -67,7 +70,7 @@ const transport = new DefaultChatTransport<PipUIMessage>({
 
 const levelFrom = (id: number): LevelId | null => curriculum.find((level) => level.id === id)?.id ?? null;
 
-/** Drives the buddy screen from POST /api/chat: the first stream part shows cards at once, the text follows. */
+/** Drives the buddy screen from POST /api/chat: the first stream part shows cards at once, the words grow sentence by sentence. */
 export function useBuddyChat(profileId: string) {
   const [state, setState] = useState<BuddyState>(INITIAL);
   const shownAt = useRef(0);
@@ -89,6 +92,7 @@ export function useBuddyChat(profileId: string) {
       setState((s) => ({
         ...s,
         pipLine: REST_LINE,
+        lineDone: true,
         lineId: s.lineId + 1,
         restSuggested: true,
       }));
@@ -105,6 +109,10 @@ export function useBuddyChat(profileId: string) {
         const held = turn.celebrate && s.feedback !== null;
         return {
           ...s,
+          // A new turn starts a new line; the check-in goes away now, the words follow.
+          pipLine: "",
+          lineDone: false,
+          lineId: s.lineId + 1,
           mode: turn.mode,
           breathed: false,
           stars: s.stars + turn.stars,
@@ -131,18 +139,18 @@ export function useBuddyChat(profileId: string) {
     [later],
   );
 
-  /** Pip's words arrive sentence by sentence; the bubble shows them once the reply is whole. */
+  /** Closes the line: the whole reply, or whatever streamed, or the engine's scripted line. */
   const sayReply = useCallback((text: string) => {
     const turn = lastTurn.current;
     setState((s) => ({
       ...s,
-      pipLine: text || turn?.fallbackLine || s.pipLine,
-      lineId: s.lineId + 1,
+      pipLine: text || s.pipLine || turn?.fallbackLine || "",
+      lineDone: true,
       status: "ready",
     }));
   }, []);
 
-  const { sendMessage, setMessages } = useChat<PipUIMessage>({
+  const { messages, sendMessage, setMessages } = useChat<PipUIMessage>({
     transport,
     onData: (part) => {
       if (part.type !== "data-turn") return;
@@ -155,7 +163,7 @@ export function useBuddyChat(profileId: string) {
     },
     onFinish: ({ message, isError }) => {
       if (isError) return;
-      const text = message.parts.flatMap((part) => (part.type === "text" ? part.text : [])).join(" ");
+      const text = message.parts.flatMap((part) => (part.type === "text" ? part.text : [])).join("");
       sayReply(text.trim());
     },
   });
@@ -186,6 +194,7 @@ export function useBuddyChat(profileId: string) {
       setState((s) => ({
         ...s,
         pipLine: RESTING_LINE,
+        lineDone: true,
         lineId: s.lineId + 1,
         status: "resting",
         feedback: null,
@@ -233,12 +242,18 @@ export function useBuddyChat(profileId: string) {
   const finishBreathing = useCallback(
     () =>
       setState((s) =>
-        s.breathed ? s : { ...s, breathed: true, pipLine: BREATH_DONE_LINE, lineId: s.lineId + 1 },
+        s.breathed ? s : { ...s, breathed: true, pipLine: BREATH_DONE_LINE, lineDone: true, lineId: s.lineId + 1 },
       ),
     [],
   );
 
   const dismissLevelUp = useCallback(() => setState((s) => ({ ...s, levelUp: null })), []);
 
-  return { ...state, sendCard, sendText, sendMood, sendBreak, finishBreathing, dismissLevelUp };
+  // The server sends Pip's line one safe sentence at a time; until it is whole, the bubble shows what has arrived.
+  const reply = messages.at(-1);
+  const streamed =
+    reply?.role === "assistant" ? reply.parts.flatMap((part) => (part.type === "text" ? part.text : [])).join("") : "";
+  const pipLine = state.lineDone ? state.pipLine : streamed;
+
+  return { ...state, pipLine, sendCard, sendText, sendMood, sendBreak, finishBreathing, dismissLevelUp };
 }
