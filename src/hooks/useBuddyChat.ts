@@ -68,6 +68,12 @@ const transport = new DefaultChatTransport<PipUIMessage>({
   prepareSendMessagesRequest: ({ body }) => ({ body: body ?? {} }),
 });
 
+/** Cards with no right answer (Ready, Not yet, coping choices) never show the try-again mark. */
+function feedbackKind(turn: TurnData, answered: Activity | null): CardFeedback["kind"] {
+  if (turn.celebrate) return "correct";
+  return answered?.answerId ? "tryAgain" : "chosen";
+}
+
 const levelFrom = (id: number): LevelId | null => curriculum.find((level) => level.id === id)?.id ?? null;
 
 /** Drives the buddy screen from POST /api/chat: the first stream part shows cards at once, the words grow sentence by sentence. */
@@ -115,7 +121,7 @@ export function useBuddyChat(profileId: string) {
           stars: s.stars + turn.stars,
           bursts: turn.celebrate ? s.bursts + 1 : s.bursts,
           activity: held ? s.activity : turn.activity,
-          feedback: s.feedback ? { ...s.feedback, kind: turn.celebrate ? "correct" : "tryAgain" } : null,
+          feedback: s.feedback ? { ...s.feedback, kind: feedbackKind(turn, s.activity) } : null,
         };
       });
       if (turn.celebrate) {
