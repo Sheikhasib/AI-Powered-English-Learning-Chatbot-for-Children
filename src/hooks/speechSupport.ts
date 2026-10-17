@@ -8,6 +8,8 @@ export type Recognition = {
   lang: string;
   interimResults: boolean;
   maxAlternatives: number;
+  /** Keeps the audio on the device where the browser supports it. */
+  processLocally?: boolean;
   onresult: ((event: RecognitionResultEvent) => void) | null;
   onend: (() => void) | null;
   onerror: (() => void) | null;
@@ -15,7 +17,9 @@ export type Recognition = {
   stop: () => void;
 };
 
-type RecognitionCtor = new () => Recognition;
+export type RecognitionCtor = (new () => Recognition) & {
+  available?: (options: { langs: string[]; processLocally: boolean }) => Promise<string>;
+};
 
 type SpeechWindow = Window & {
   SpeechRecognition?: RecognitionCtor;
@@ -26,6 +30,15 @@ export function getRecognitionCtor(): RecognitionCtor | null {
   if (typeof window === "undefined") return null;
   const w = window as SpeechWindow;
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+/** True when this browser can recognise English on the device itself, so no audio leaves it. */
+export async function canListenLocally(ctor: RecognitionCtor, lang: string): Promise<boolean> {
+  try {
+    return (await ctor.available?.({ langs: [lang], processLocally: true })) === "available";
+  } catch {
+    return false;
+  }
 }
 
 export function canSpeak(): boolean {

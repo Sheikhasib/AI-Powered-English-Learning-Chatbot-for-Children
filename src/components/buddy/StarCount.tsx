@@ -26,7 +26,7 @@ export function StarCount({ stars, mode }: Props) {
         <Star aria-hidden className="size-7 fill-accent stroke-foreground stroke-[1.5]" />
         <span>{stars}</span>
       </div>
-      <span className="text-[0.7rem] text-muted-foreground" aria-label={`Pip is in ${MODE_LABEL[mode]} mode`}>
+      <span className="text-[0.875rem] text-muted-foreground" aria-label={`Pip is in ${MODE_LABEL[mode]} mode`}>
         {MODE_LABEL[mode]}
       </span>
     </div>

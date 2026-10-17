@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { readMuted, subscribeMuted, writeMuted } from "./mutePreference";
 import {
+  canListenLocally,
   canSpeak,
   getRecognitionCtor,
   pickVoice,
@@ -39,13 +41,13 @@ export function useSpeech() {
     () => getRecognitionCtor() !== null,
     () => false,
   );
-  const [muted, setMuted] = useState(false);
-  const mutedRef = useRef(false);
+  const muted = useSyncExternalStore(subscribeMuted, readMuted, () => false);
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const runRef = useRef(0);
   const recognitionRef = useRef<Recognition | null>(null);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!speechSupported) return;
@@ -63,6 +65,7 @@ export function useSpeech() {
 
   const cancel = useCallback(() => {
     runRef.current += 1;
+    clearTimeout(watchdogRef.current);
     if (canSpeak()) window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);
@@ -75,7 +78,7 @@ export function useSpeech() {
     ({ onWord, onEnd }: SpeakOptions = {}): SpokenLine => {
       cancel();
       const run = runRef.current;
-      const live = canSpeak() && !mutedRef.current;
+      const live = canSpeak() && !readMuted();
       let queued = 0;
       let finished = 0;
       let chars = 0;
@@ -84,6 +87,7 @@ export function useSpeech() {
       const finish = () => {
         if (done || run !== runRef.current) return;
         done = true;
+        clearTimeout(watchdogRef.current);
         setSpeaking(false);
         onEnd?.();
       };
@@ -91,7 +95,10 @@ export function useSpeech() {
         if (closed && finished >= queued) finish();
       };
       // Some browsers never fire `end`; this keeps the cards from staying locked.
-      const watchdog = () => setTimeout(finish, chars * WATCHDOG_MS_PER_CHAR + WATCHDOG_BASE_MS);
+      const watchdog = () => {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = setTimeout(finish, chars * WATCHDOG_MS_PER_CHAR + WATCHDOG_BASE_MS);
+      };
       if (live) setSpeaking(true);
       else queueMicrotask(finish);
 
@@ -141,7 +148,7 @@ export function useSpeech() {
 
   /** Starts one listen; resolves through `onTranscript`. Pip stops talking first. */
   const listen = useCallback(
-    (onTranscript: (text: string) => void) => {
+    async (onTranscript: (text: string) => void) => {
       const Ctor = getRecognitionCtor();
       if (!Ctor) return;
       cancel();
@@ -149,6 +156,7 @@ export function useSpeech() {
       recognition.lang = "en-US";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
+      if (await canListenLocally(Ctor, recognition.lang)) recognition.processLocally = true;
       recognition.onresult = (event) => {
         const text = event.results[0]?.[0]?.transcript.trim();
         if (text) onTranscript(text);
@@ -163,8 +171,7 @@ export function useSpeech() {
   );
 
   const toggleMute = useCallback(() => {
-    mutedRef.current = !mutedRef.current;
-    setMuted(mutedRef.current);
+    writeMuted(!readMuted());
     cancel();
   }, [cancel]);
 

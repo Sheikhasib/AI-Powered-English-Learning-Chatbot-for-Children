@@ -2,10 +2,18 @@
 
 import { useProgress } from "@/hooks/useProgress";
 import { earnedStickers } from "./progressView";
-import { StickerBook } from "./StickerBook";
+import { SpeakLine } from "./SpeakLine";
+import { EMPTY_LINE, StickerBook } from "./StickerBook";
 
-/** Loads the child's real skill states, then shows one sticker per mastered skill. */
+/** Loads the child's real skill states, shows one sticker per mastered skill, and says the title (and the empty line). */
 export function StickersContent({ profileId }: { profileId: string | undefined }) {
   const progress = useProgress(profileId);
-  return progress ? <StickerBook stickers={earnedStickers(progress.skills)} /> : null;
+  if (!progress) return null;
+  const stickers = earnedStickers(progress.skills);
+  return (
+    <>
+      <SpeakLine text={stickers.length === 0 ? `My stickers. ${EMPTY_LINE}` : "My stickers."} />
+      <StickerBook stickers={stickers} />
+    </>
+  );
 }

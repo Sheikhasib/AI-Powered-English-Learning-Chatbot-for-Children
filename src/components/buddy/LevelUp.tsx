@@ -26,7 +26,14 @@ export function LevelUp({ level, onClose }: Props) {
   useEffect(() => {
     button.current?.focus();
     const timer = setTimeout(onClose, AUTO_CLOSE_MS);
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    // The one button is the only thing to reach, so Tab keeps focus on it instead of the screen behind.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "Tab") {
+        event.preventDefault();
+        button.current?.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(timer);

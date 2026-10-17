@@ -8,14 +8,15 @@ type Props = {
   className?: string;
 };
 
-/** Pip's line in a white bubble; the spoken word sits on the accent colour. */
+/**
+ * Pip's line in a white bubble; the spoken word sits on the accent colour. Screen readers get the whole
+ * line from a hidden live region, so the highlighted copy, which changes word by word, stays silent.
+ */
 export function SpeechBubble({ text, word, className }: Props) {
   const range = word && word.end <= text.length ? word : null;
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       className={cn(
         "relative rounded-lg border-2 border-border bg-card px-5 py-4 text-center text-bubble font-bold text-card-foreground shadow-sm",
         className,
@@ -25,17 +26,22 @@ export function SpeechBubble({ text, word, className }: Props) {
         aria-hidden
         className="absolute -top-2.5 left-1/2 size-5 -translate-x-1/2 rotate-45 border-t-2 border-l-2 border-border bg-card"
       />
-      {range ? (
-        <>
-          <span>{text.slice(0, range.start)}</span>
-          <mark className="rounded-md bg-accent px-1 text-accent-foreground">
-            {text.slice(range.start, range.end)}
-          </mark>
-          <span>{text.slice(range.end)}</span>
-        </>
-      ) : (
-        text
-      )}
+      <p role="status" aria-live="polite" className="sr-only">
+        {text}
+      </p>
+      <p aria-hidden>
+        {range ? (
+          <>
+            <span>{text.slice(0, range.start)}</span>
+            <mark className="rounded-md bg-accent px-1 text-accent-foreground">
+              {text.slice(range.start, range.end)}
+            </mark>
+            <span>{text.slice(range.end)}</span>
+          </>
+        ) : (
+          text
+        )}
+      </p>
     </div>
   );
 }

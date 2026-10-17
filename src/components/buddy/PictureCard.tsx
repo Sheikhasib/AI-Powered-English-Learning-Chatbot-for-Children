@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 /** `waiting`: another card was chosen, so this one is quiet but not dimmed. */
 export type CardState = "rest" | "waiting" | "chosen" | "correct" | "tryAgain" | "locked";
 
+/** `rest` is the only tappable state, so it alone wears the accent ring: Pip has finished and it is the child's turn. */
 const SURFACE: Record<CardState, string> = {
-  rest: "border-border bg-card",
+  rest: "border-border bg-card ring-4 ring-accent",
   waiting: "border-border bg-card",
   locked: "border-border bg-card opacity-60",
   chosen: "border-primary bg-card",

@@ -80,6 +80,8 @@ export function useBuddyChat(profileId: string) {
   const lastTurn = useRef<TurnData | null>(null);
   /** `useChat` reports request failures here instead of throwing. */
   const requestFailed = useRef(false);
+  /** Set at 15 minutes; Pip says the rest line after the next reply, never in the middle of one. */
+  const restDue = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -89,13 +91,8 @@ export function useBuddyChat(profileId: string) {
   useEffect(() => {
     const pending = timers.current;
     const suggestRest = setTimeout(() => {
-      setState((s) => ({
-        ...s,
-        pipLine: REST_LINE,
-        lineDone: true,
-        lineId: s.lineId + 1,
-        restSuggested: true,
-      }));
+      restDue.current = true;
+      setState((s) => ({ ...s, restSuggested: true }));
     }, BREAK_AFTER_MS);
     return () => {
       clearTimeout(suggestRest);
@@ -142,9 +139,11 @@ export function useBuddyChat(profileId: string) {
   /** Closes the line: the whole reply, or whatever streamed, or the engine's scripted line. */
   const sayReply = useCallback((text: string) => {
     const turn = lastTurn.current;
+    const rest = restDue.current ? ` ${REST_LINE}` : "";
+    restDue.current = false;
     setState((s) => ({
       ...s,
-      pipLine: text || s.pipLine || turn?.fallbackLine || "",
+      pipLine: `${text || s.pipLine || turn?.fallbackLine || ""}${rest}`,
       lineDone: true,
       status: "ready",
     }));
@@ -234,6 +233,7 @@ export function useBuddyChat(profileId: string) {
   );
   const sendMood = useCallback((mood: Mood) => void send({ kind: "mood", mood }), [send]);
   const sendBreak = useCallback(() => {
+    restDue.current = false;
     setState((s) => ({ ...s, restSuggested: false }));
     void send({ kind: "break" });
   }, [send]);

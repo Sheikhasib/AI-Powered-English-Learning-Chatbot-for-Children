@@ -43,10 +43,13 @@ function Island({ island }: { island: IslandView }) {
         ISLAND_SURFACE[island.level],
       )}
     >
-      <div className="grid size-16 shrink-0 place-items-center rounded-full bg-card text-5xl font-bold text-primary">
+      <div
+        aria-hidden={island.locked || undefined}
+        className="grid size-16 shrink-0 place-items-center rounded-full bg-card text-5xl font-bold text-primary"
+      >
         {island.level}
       </div>
-      <div className="flex min-w-0 flex-col gap-2">
+      <div aria-hidden={island.locked || undefined} className="flex min-w-0 flex-col gap-2">
         <h2 className="text-label font-bold">{island.title}</h2>
         <ul className="flex flex-wrap gap-1">
           {island.skills.map((skill) => (

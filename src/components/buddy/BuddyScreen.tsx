@@ -91,13 +91,20 @@ function BuddySession({ profile }: { profile: Profile }) {
       action(...args);
     };
 
+  /** Pip is a big button: tapping it says the current line again. */
+  const hearAgain = () =>
+    speech.speak(line, {
+      onWord: (spokenWord) => setSpoken({ key: lineKey, word: spokenWord }),
+      onEnd: () => setSpoken(null),
+    });
+
   const toggleListening = () =>
     speech.listening ? speech.stopListening() : speech.listen((text) => chat.sendText(text, "voice"));
 
   return (
     <main
       className={cn(
-        "mx-auto flex h-dvh w-full max-w-5xl flex-col gap-3 overflow-y-auto px-4 py-3 transition-colors duration-(--duration-slow)",
+        "mx-auto flex h-dvh w-full max-w-5xl flex-col gap-3 overflow-hidden px-4 py-3 transition-colors duration-(--duration-slow)",
         checkingIn ? "bg-mode-chat" : MODE_BACKGROUND[chat.mode],
       )}
     >
@@ -105,8 +112,15 @@ function BuddySession({ profile }: { profile: Profile }) {
 
       <div className="grid min-h-0 flex-1 gap-3 landscape:min-[700px]:grid-cols-2 landscape:min-[700px]:items-center landscape:min-[700px]:gap-10">
         <section className="flex min-h-0 flex-col items-center gap-3 self-stretch">
-          <div className="relative min-h-28 w-full max-w-72 flex-1 landscape:min-[700px]:max-h-[55dvh]">
-            <Pip expression={expression} speaking={speech.speaking} />
+          <div className="relative min-h-16 w-full max-w-72 flex-1 landscape:min-[700px]:max-h-[55dvh]">
+            <button
+              type="button"
+              onClick={hearAgain}
+              aria-label="Hear Pip again"
+              className="absolute inset-0 rounded-lg active:scale-[0.98] motion-reduce:active:scale-100"
+            >
+              <Pip expression={expression} speaking={speech.speaking} />
+            </button>
             <StarBurst trigger={chat.bursts} />
             <div className="absolute top-0 left-0">
               <StarCount stars={chat.stars} mode={chat.mode} />
@@ -122,7 +136,7 @@ function BuddySession({ profile }: { profile: Profile }) {
           <SpeechBubble text={line} word={word} className="w-full" />
         </section>
 
-        <section className="flex flex-col gap-3">
+        <section className="flex min-h-0 flex-col gap-3">
           <ActivityArea
             checkingIn={checkingIn}
             activity={chat.activity}
@@ -133,11 +147,13 @@ function BuddySession({ profile }: { profile: Profile }) {
             onPick={tapped(chat.sendCard)}
             onBreathDone={chat.finishBreathing}
           />
-          <MoodBar
-            onMood={tapped(chat.sendMood)}
-            onBreak={tapped(chat.sendBreak)}
-            restSuggested={chat.restSuggested}
-          />
+          {!checkingIn && (
+            <MoodBar
+              onMood={tapped(chat.sendMood)}
+              onBreak={tapped(chat.sendBreak)}
+              restSuggested={chat.restSuggested}
+            />
+          )}
         </section>
       </div>
       <AnimatePresence>
