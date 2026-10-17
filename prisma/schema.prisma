@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Device {
+  id        String    @id // cookie uuid
+  createdAt DateTime  @default(now())
+  profiles  Profile[]
+}
+
+model Profile {
+  id        String       @id @default(cuid())
+  deviceId  String
+  device    Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  nickname  String       @db.VarChar(12)
+  ageBand   AgeBand
+  avatar    String
+  interests String[]
+  level     Int          @default(1)
+  stars     Int          @default(0)
+  summary   String       @default("") // rolling conversation summary, under 400 chars
+  createdAt DateTime     @default(now())
+  skills    SkillState[]
+  turns     Turn[]
+  sessions  Session[]
+
+  @@index([deviceId])
+}
+
+model SkillState {
+  profileId  String
+  profile    Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  skillId    String
+  mastery    Float     @default(0)
+  attempts   Int       @default(0)
+  streak     Int       @default(0) // +n correct in a row, -n wrong in a row
+  lastSeenAt DateTime?
+  dueAt      DateTime? // spaced review
+
+  @@id([profileId, skillId])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  profileId String
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  startedAt DateTime  @default(now())
+  checkIn   Mood?
+  endedAt   DateTime?
+  turns     Turn[]
+}
+
+model Turn {
+  id          String   @id @default(cuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  childInput  String   @db.VarChar(300) // already redacted by inputGuard
+  inputKind   String // text | voice | card | mood | break
+  botReply    String   @db.VarChar(400)
+  mode        Mode
+  modeReason  String
+  mood        Mood?
+  activityId  String?
+  correct     Boolean?
+  fallback    Boolean  @default(false)
+  safetyFlag  String?
+  tGuard      Int
+  tContext    Int
+  tEngine     Int
+  tFirstToken Int
+  tTotal      Int
+
+  @@index([profileId, createdAt])
+}
+
+enum AgeBand {
+  AGE_3_4
+  AGE_5_6
+}
+
+enum Mode {
+  LEARN
+  CHAT
+  PLAY
+  SUPPORT
+  CALM
+}
+
+enum Mood {
+  HAPPY
+  OKAY
+  SAD
+  ANGRY
+  TIRED
+  SCARED
+  EXCITED
+}
