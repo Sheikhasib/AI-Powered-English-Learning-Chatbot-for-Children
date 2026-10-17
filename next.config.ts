@@ -20,6 +20,7 @@ const contentSecurityPolicy = [
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "Referrer-Policy", value: "no-referrer" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   {
