@@ -50,7 +50,7 @@ src/
   types/
 prisma/schema.prisma
 tests/                  Vitest unit tests mirror src/engine and src/safety
-docs/                   architecture.md, system-design.md, latency.md, video-script.md
+docs/                   architecture.md, system-design.md, latency.md
 ```
 
 ## How we work

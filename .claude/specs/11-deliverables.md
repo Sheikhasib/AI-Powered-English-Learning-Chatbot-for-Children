@@ -10,7 +10,6 @@ Everything the assessors asked for, in the repo, accurate to the code as built.
 - `docs/architecture.md`: Mermaid diagrams: system context, the `/api/chat` sequence with timings, the mode state machine, the data model (ER). Also export `docs/architecture.png` for the email.
 - `docs/system-design.md`: requirements and how each is met; component design (engine, detector, SEL, guards, prompt composer); data model; API contract; latency budget and measurements; safety and privacy; scalability (stateless functions, pooled DB, Redis); failure modes and fallbacks; testing strategy; trade-offs (rule-based detection vs a classifier, Web Speech vs cloud speech, LLM for voice only); future work.
 - `docs/latency.md`: method and the numbers from `/latency-check` on the live URL.
-- `docs/video-script.md`: a 2-minute English script with timings: 0:00 problem and the core principle, 0:20 live demo (check-in, L1 activity, a sad message switching to Support, Play break), 1:10 architecture and latency, 1:35 tools and trade-offs, 1:55 close.
 
 ## Acceptance checklist
 - [ ] Every claim in the docs matches the code (names, thresholds, numbers).
