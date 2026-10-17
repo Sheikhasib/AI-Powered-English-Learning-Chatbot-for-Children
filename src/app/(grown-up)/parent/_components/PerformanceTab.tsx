@@ -1,5 +1,6 @@
 import { LATENCY_WINDOW_TURNS, type LatencyStats } from "@/server/repositories/metrics";
 import { Bar } from "./Bar";
+import { SampleBadge } from "./SampleBadge";
 
 const FIRST_TOKEN_TARGET_MS = 1000;
 const TOTAL_TARGET_MS = 2000;
@@ -20,12 +21,17 @@ function Pair({ title, p50, p95, target }: { title: string; p50: number | null; 
   );
 }
 
-/** Real stored timings from the latest turns; the same numbers /api/metrics returns. */
-export function PerformanceTab({ stats }: { stats: LatencyStats }) {
+/** Stored timings from the latest turns; real ones match /api/metrics, sample ones are labelled as made up. */
+export function PerformanceTab({ stats, sample }: { stats: LatencyStats; sample: boolean }) {
   if (stats.turns === 0) return <p className="text-body text-muted-foreground">No timings yet. Chat with Pip first.</p>;
 
   return (
     <div className="space-y-6">
+      {sample && (
+        <p className="flex flex-wrap items-center gap-3 text-body">
+          <SampleBadge /> These timings are made up for the demo. They are not measured.
+        </p>
+      )}
       <p className="text-meta text-muted-foreground">
         Based on the latest {stats.turns} of up to {LATENCY_WINDOW_TURNS} turns.
       </p>

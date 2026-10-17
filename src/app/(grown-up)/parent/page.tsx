@@ -4,11 +4,14 @@ import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
 import { getDb } from "@/server/db";
 import { DEVICE_COOKIE } from "@/server/device";
+import { demoDataExists } from "@/server/repositories/demo/exists";
+import { isDemoDevice } from "@/server/repositories/demo/ids";
 import { getLatencyStats } from "@/server/repositories/metrics";
 import { listProfiles } from "@/server/repositories/profiles";
 import { getParentReport } from "@/server/repositories/report";
 import { ConversationsTab } from "./_components/ConversationsTab";
 import { DeleteAllData } from "./_components/DeleteAllData";
+import { SampleBanner, ViewSampleButton } from "./_components/DemoSwitch";
 import { FeelingsTab } from "./_components/FeelingsTab";
 import { PerformanceTab } from "./_components/PerformanceTab";
 import { ProgressTab } from "./_components/ProgressTab";
@@ -43,12 +46,14 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/parent">, "searchPar
   const params = await searchParams;
   const deviceId = (await cookies()).get(DEVICE_COOKIE)?.value;
   const db = getDb();
+  const sample = isDemoDevice(deviceId);
+  const offerSample = !sample && (await demoDataExists(db));
   const profiles = deviceId ? await listProfiles(db, deviceId) : [];
   const profile = profiles.find((p) => p.id === first(params.profile)) ?? profiles[0];
   const tab: TabId = TABS.find((t) => t.id === first(params.tab))?.id ?? "progress";
 
   const report = deviceId && profile ? await getParentReport(db, deviceId, profile.id) : null;
-  const stats = tab === "speed" && deviceId && profile ? await getLatencyStats(db, deviceId, profile.id) : null;
+  const stats = tab === "speed" && deviceId && profile ? await getLatencyStats(db, deviceId, profile.id, { includeSample: sample }) : null;
   const href = (profileId: string, tabId: TabId) => `/parent?profile=${profileId}&tab=${tabId}`;
 
   return (
@@ -59,6 +64,8 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/parent">, "searchPar
           <ArrowLeft className="mr-2 size-5" aria-hidden /> Back to Pip
         </Link>
       </header>
+
+      {sample && <SampleBanner />}
 
       {!profile || !report ? (
         <p className="text-body">No child profile on this device yet. Add one from the welcome screen.</p>
@@ -82,11 +89,13 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/parent">, "searchPar
             {tab === "progress" && <ProgressTab report={report} />}
             {tab === "feelings" && <FeelingsTab report={report} />}
             {tab === "chats" && <ConversationsTab report={report} />}
-            {tab === "speed" && stats && <PerformanceTab stats={stats} />}
+            {tab === "speed" && stats && <PerformanceTab stats={stats} sample={sample} />}
             {tab === "privacy" && <DeleteAllData profileId={profile.id} nickname={profile.nickname} />}
           </section>
         </>
       )}
+
+      {offerSample && <ViewSampleButton />}
     </main>
   );
 }

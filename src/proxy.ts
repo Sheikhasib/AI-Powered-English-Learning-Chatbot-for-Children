@@ -15,4 +15,4 @@ export function proxy(request: NextRequest) {
   return NextResponse.redirect(gate);
 }
 
-export const config = { matcher: ["/parent/:path*", "/api/metrics"] };
+export const config = { matcher: ["/parent/:path*", "/api/metrics", "/api/demo"] };

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { DEMO_DEVICE_ID } from "./demo/ids";
 
 export const LATENCY_WINDOW_TURNS = 100;
 
@@ -17,11 +18,13 @@ export type LatencyStats = z.infer<typeof statsSchema>;
 /**
  * Percentiles of the stored timings over the device's latest 100 turns, optionally for one profile.
  * The window is taken first so a busy profile cannot hide a slow patch behind older fast turns.
+ * The demo device is left out unless `includeSample` is set, because its timings are made up.
  */
 export async function getLatencyStats(
   db: PrismaClient,
   deviceId: string,
   profileId?: string,
+  { includeSample = false }: { includeSample?: boolean } = {},
 ): Promise<LatencyStats> {
   const rows = await db.$queryRaw<unknown[]>`
     WITH recent AS (
@@ -29,6 +32,7 @@ export async function getLatencyStats(
       FROM "Turn" t
       JOIN "Profile" p ON p."id" = t."profileId"
       WHERE p."deviceId" = ${deviceId}
+        AND (${includeSample}::boolean OR p."deviceId" <> ${DEMO_DEVICE_ID})
         AND (${profileId ?? null}::text IS NULL OR p."id" = ${profileId ?? null}::text)
       ORDER BY t."createdAt" DESC
       LIMIT ${LATENCY_WINDOW_TURNS}
