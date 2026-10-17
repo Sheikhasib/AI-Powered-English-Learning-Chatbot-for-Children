@@ -5,6 +5,7 @@ import { buildActivity } from "@/engine/curriculum/buildActivity";
 import { MODES, MOODS } from "@/types/domain";
 import { buildFallback, type FallbackEvent } from "@/llm/fallback";
 import { outputGuard } from "@/safety/outputGuard";
+import { breathingActivity } from "@/components/buddy/breathing";
 
 const skill = getSkill("l2.animals");
 const activity = skill ? buildActivity(skill, skill.activityKinds[0], createRng(1), "AGE_5_6") : null;
@@ -38,6 +39,15 @@ describe("buildFallback", () => {
     const line = buildFallback({ mode: "SUPPORT", mood: "SAD", event: "start", activity: null, showHint: false }, createRng(1));
     expect(line.startsWith("It's okay to feel sad.")).toBe(true);
     expect(line).not.toMatch(/tap the/i);
+  });
+
+  it("leads only the breathing in Calm, with no question", () => {
+    const breathing = breathingActivity();
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const line = buildFallback({ mode: "CALM", mood: "TIRED", event: "none", activity: breathing, showHint: false }, createRng(seed));
+      expect(line).toBe(`Let's rest together. ${breathing.prompt}`);
+      expect(line).not.toContain("?");
+    }
   });
 
   it("is deterministic for the same seed", () => {

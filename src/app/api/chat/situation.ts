@@ -19,8 +19,9 @@ function gentleSituation(mood: Mood): string {
 
 /** The engine's description of what happened, written by us so no child text reaches the system prompt. */
 export function situationFor(event: FallbackEvent, input: ChatInput, mode: Mode, mood: Mood): string {
-  if (input.kind === "break") return "The child wants a rest. Agree kindly.";
-  if (mode === "SUPPORT" || mode === "CALM") return gentleSituation(mood);
+  if (input.kind === "break") return "The child wants a rest. Agree kindly. Ask no questions.";
+  if (mode === "CALM") return `${gentleSituation(mood)} Ask no questions.`;
+  if (mode === "SUPPORT") return gentleSituation(mood);
   if (event === "start") return `The child feels ${mood.toLowerCase()}. Name that feeling kindly in one sentence.`;
   return SITUATION[event];
 }

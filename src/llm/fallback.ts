@@ -38,10 +38,12 @@ function learnLine(input: FallbackInput, rng: Rng): string {
   return `${learnLead(input, rng)} ${activity.prompt}`;
 }
 
+const CALM_LEAD = "Let's rest together.";
+
+/** With cards on screen, Pip leads that activity alone, so a random calm idea never talks over the breathing. */
 function calmLine(activity: Activity | null, rng: Rng): string {
-  const { lines } = pickCalmActivity(rng);
-  const spoken = lines.slice(0, activity ? 1 : 2).join(" ");
-  return activity ? `${spoken} ${activity.prompt}` : spoken;
+  if (activity) return `${CALM_LEAD} ${activity.prompt}`;
+  return pickCalmActivity(rng).lines.slice(0, 2).join(" ");
 }
 
 /**
