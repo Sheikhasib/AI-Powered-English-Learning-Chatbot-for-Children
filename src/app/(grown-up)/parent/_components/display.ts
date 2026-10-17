@@ -30,7 +30,17 @@ export function formatTime(date: Date): string {
   return `${timeFormat.format(date)} UTC`;
 }
 
-/** "safe_topic" becomes "safe topic". */
+const FLAG_LABELS: Record<string, string> = {
+  "redacted:phone": "Phone number removed",
+  "redacted:email": "Email removed",
+  "redacted:address": "Address removed",
+  "redacted:school": "School name removed",
+  "redacted:surname": "Last name removed",
+  disclosure: "Something worrying was shared",
+  unsafe_topic: "An unsafe topic came up",
+};
+
+/** Plain-English label for a stored safety flag; unknown codes fall back to readable words. */
 export function flagLabel(flag: string): string {
-  return flag.replaceAll("_", " ");
+  return FLAG_LABELS[flag] ?? flag.replace(/[_:]/g, " ");
 }
