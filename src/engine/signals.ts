@@ -1,4 +1,4 @@
-import { FAST_GUESS_MS, STORY_MIN_WORDS } from "./config";
+import { BREAK_AFTER_MINUTES, FAST_GUESS_MS, STORY_MIN_WORDS } from "./config";
 import {
   BREAK_PHRASES,
   GREETING_PHRASES,
@@ -15,6 +15,10 @@ import type { Signals, TurnHistory, TurnInput } from "@/types/mode";
 
 const MS_PER_MINUTE = 60_000;
 
+function minutesSince(start: Date, at: Date): number {
+  return (at.getTime() - start.getTime()) / MS_PER_MINUTE;
+}
+
 function isQuestion(tokens: string[]): boolean {
   return (
     tokens.includes("?") ||
@@ -28,6 +32,8 @@ export function extractSignals(input: TurnInput, history: TurnHistory, now: Date
   const tokens = tokenize(input.text);
   const wordCount = tokens.filter((t) => t !== "?").length;
   const tappedHappy = input.tappedMood === "HAPPY" || input.tappedMood === "EXCITED";
+  const sessionMinutes = minutesSince(history.sessionStartedAt, now);
+  const minutesAtLastLine = history.lastBotAt ? minutesSince(history.sessionStartedAt, history.lastBotAt) : 0;
 
   return {
     feeling: input.tappedMood ?? findFeeling(tokens),
@@ -44,7 +50,8 @@ export function extractSignals(input: TurnInput, history: TurnHistory, now: Date
     previousFastGuess: history.previousFastGuess,
     silenceMs: history.lastBotAt ? now.getTime() - history.lastBotAt.getTime() : 0,
     teachingStreak: history.teachingStreak,
-    sessionMinutes: (now.getTime() - history.sessionStartedAt.getTime()) / MS_PER_MINUTE,
+    sessionMinutes,
+    breakTimeReached: sessionMinutes >= BREAK_AFTER_MINUTES && minutesAtLastLine < BREAK_AFTER_MINUTES,
     lastMood: history.lastMood,
   };
 }

@@ -76,7 +76,7 @@ function signalsFor(step: DemoStep, run: number, teachingStreak: number, previou
     isGreeting: false, isReady: false, safetyDisclosure: false,
     correctStreak: Math.max(run, 0), wrongStreak: Math.max(-run, 0),
     fastGuess: step.fast ?? false, previousFastGuess: previousFast, silenceMs: 0,
-    teachingStreak, sessionMinutes: step.atMin, lastMood: null,
+    teachingStreak, sessionMinutes: step.atMin, breakTimeReached: false, lastMood: null,
     ...step.signals,
   };
 }

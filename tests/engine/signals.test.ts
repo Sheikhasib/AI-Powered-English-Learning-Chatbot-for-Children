@@ -140,6 +140,14 @@ describe("extractSignals: behavior", () => {
     expect(extractSignals(input(), history(), now).silenceMs).toBe(0);
   });
 
+  it("reports break time only on the first turn past 15 minutes", () => {
+    const start = new Date(now.getTime() - 16 * 60_000);
+    const first = extractSignals(input(), history({ sessionStartedAt: start, lastBotAt: new Date(now.getTime() - 2 * 60_000) }), now);
+    const later = extractSignals(input(), history({ sessionStartedAt: start, lastBotAt: new Date(now.getTime() - 30_000) }), now);
+    expect(first.breakTimeReached).toBe(true);
+    expect(later.breakTimeReached).toBe(false);
+  });
+
   it("measures session minutes and carries history through", () => {
     const signals = extractSignals(
       input(),
@@ -147,6 +155,7 @@ describe("extractSignals: behavior", () => {
       now,
     );
     expect(signals.sessionMinutes).toBe(16);
+    expect(signals.breakTimeReached).toBe(true);
     expect(signals.teachingStreak).toBe(3);
     expect(signals.lastMood).toBe("TIRED");
     expect(signals.previousFastGuess).toBe(true);

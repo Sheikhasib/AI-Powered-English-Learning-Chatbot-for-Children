@@ -19,6 +19,7 @@ const calm: Signals = {
   silenceMs: 0,
   teachingStreak: 0,
   sessionMinutes: 1,
+  breakTimeReached: false,
   lastMood: null,
 };
 
@@ -44,9 +45,22 @@ describe("detectMode rules", () => {
     expect(detectMode(sig({ wantsBreak: true }), prev()).mode).toBe("CALM");
   });
 
-  it("2: 15 minutes of session time means Calm", () => {
-    expect(detectMode(sig({ sessionMinutes: 15 }), prev()).mode).toBe("CALM");
-    expect(detectMode(sig({ sessionMinutes: 14.9 }), prev()).mode).toBe("LEARN");
+  it("2: reaching 15 minutes of session time means Calm", () => {
+    expect(detectMode(sig({ sessionMinutes: 15, breakTimeReached: true }), prev()).mode).toBe("CALM");
+  });
+
+  it("2: after the break suggestion, a long session alone no longer forces Calm", () => {
+    expect(detectMode(sig({ sessionMinutes: 20 }), prev({ mode: "PLAY", turnsInMode: 1 })).mode).not.toBe("CALM");
+  });
+
+  it("2: a child who says they are ready leaves Calm even past break time or when tired", () => {
+    const calmPrev = prev({ mode: "CALM", turnsInMode: 3 });
+    expect(detectMode(sig({ isReady: true, breakTimeReached: true }), calmPrev).mode).not.toBe("CALM");
+    expect(detectMode(sig({ isReady: true, lastMood: "TIRED" }), calmPrev).mode).not.toBe("CALM");
+  });
+
+  it("2: being ready replaces a tired mood with okay, so Calm does not come straight back", () => {
+    expect(detectMode(sig({ isReady: true, lastMood: "TIRED" }), prev({ mode: "CALM", turnsInMode: 1 })).mood).toBe("OKAY");
   });
 
   it("2: a tired last mood means Calm", () => {
@@ -180,7 +194,7 @@ describe("detectMode output", () => {
   it("always gives a readable reason and a confidence between 0 and 1", () => {
     const cases: Partial<Signals>[] = [
       {}, { feeling: "SAD" }, { safetyDisclosure: true }, { wantsBreak: true }, { wrongStreak: 3 },
-      { refusal: true }, { isQuestion: true }, { teachingStreak: 4 }, { sessionMinutes: 20 },
+      { refusal: true }, { isQuestion: true }, { teachingStreak: 4 }, { breakTimeReached: true },
     ];
     for (const overrides of cases) {
       const result = detectMode(sig(overrides), prev());

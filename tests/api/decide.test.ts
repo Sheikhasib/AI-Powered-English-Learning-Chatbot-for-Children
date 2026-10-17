@@ -151,3 +151,25 @@ describe("decideTurn", () => {
     }
   });
 });
+
+describe("decideTurn leaving Calm", () => {
+  const minutesIn = (min: number) => new Date(NOW.getTime() + min * 60_000);
+  const calmTurn = (mood: RecentTurn["mood"], at: Date): RecentTurn => ({
+    childInput: "[break]", botReply: "", mode: "CALM", mood, activityId: null, correct: null, responseMs: null, createdAt: at,
+  });
+  const readyTap: ChatInput = { kind: "card", activityId: "support:ready", choiceId: "ready", responseMs: 2000 };
+  const decideAt = (ctx: TurnContext, at: Date) =>
+    decideTurn({ ctx, input: readyTap, text: "", guard: { action: "ok" }, now: at, rng: createRng(7) });
+
+  it("lets a child who taps Ready go on, even 20 minutes into the session", () => {
+    const ctx = context([calmTurn("HAPPY", minutesIn(19)), calmTurn("HAPPY", minutesIn(18))]);
+    expect(decideAt(ctx, minutesIn(20)).turn.mode).not.toBe("CALM");
+  });
+
+  it("lets a tired child who taps Ready go on, and drops the tired mood", () => {
+    const ctx = context([calmTurn("TIRED", minutesIn(3)), calmTurn("TIRED", minutesIn(2))], "TIRED");
+    const { turn } = decideAt(ctx, minutesIn(4));
+    expect(turn.mode).not.toBe("CALM");
+    expect(turn.mood).toBe("OKAY");
+  });
+});

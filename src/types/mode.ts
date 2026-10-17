@@ -42,6 +42,8 @@ export type Signals = {
   silenceMs: number;
   teachingStreak: number;
   sessionMinutes: number;
+  /** True only on the first turn past the break time, so the suggestion comes once and never traps the child in Calm. */
+  breakTimeReached: boolean;
   lastMood: Mood | null;
 };
 

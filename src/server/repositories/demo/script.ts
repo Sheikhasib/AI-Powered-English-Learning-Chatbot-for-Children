@@ -68,7 +68,7 @@ const sessionTwo: DemoSession = {
     at(8, L("l2.animals", "cow", "Moo! The cow says moo.", true)),
     at(9, C("...", "Are you there? Let us find a fun one.", { silenceMs: 25_000 })),
     at(10, C("Why is the sky blue?", "Good question! The sky looks blue in the sun.", { isQuestion: true })),
-    at(16, L("l2.toys", "ball", "A ball! Let us rest a little.", true)),
+    at(16, L("l2.toys", "ball", "A ball! Let us rest a little.", true, { signals: { breakTimeReached: true } })),
     at(17, C("okay", "Nice and slow. Breathe in, breathe out.", {})),
   ],
 };

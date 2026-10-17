@@ -37,7 +37,8 @@ function matchRule(s: Signals, prev: PreviousMode): Rule {
   if (s.safetyDisclosure) {
     return { mode: "SUPPORT", confidence: 1, reason: "child shared something for a grown-up (safety flag)" };
   }
-  if (s.wantsBreak || s.sessionMinutes >= BREAK_AFTER_MINUTES || s.lastMood === "TIRED") {
+  // Break time and tiredness only suggest a rest; a child who says they are ready may go on.
+  if (s.wantsBreak || (!s.isReady && (s.breakTimeReached || s.lastMood === "TIRED"))) {
     return { mode: "CALM", confidence: 0.9, reason: breakReason(s) };
   }
   if (s.wrongStreak >= WRONG_STREAK_SUPPORT || (s.refusal && s.wrongStreak >= 1)) {
@@ -69,8 +70,12 @@ function applyHysteresis(rule: Rule, s: Signals, prev: PreviousMode): Rule {
   return rule;
 }
 
+const UPBEAT_MOODS: Mood[] = ["HAPPY", "EXCITED"];
+
 function inferMood(s: Signals): Mood {
   if (s.feeling) return s.feeling;
+  // Saying "ready" ends a tired or upset spell, so the old mood does not pull Pip back next turn.
+  if (s.isReady) return s.lastMood && UPBEAT_MOODS.includes(s.lastMood) ? s.lastMood : "OKAY";
   if (s.lastMood) return s.lastMood;
   if (s.correctStreak >= CORRECT_STREAK_HAPPY) return "HAPPY";
   return "OKAY";
