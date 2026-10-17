@@ -28,7 +28,7 @@ export type StreamArgs = {
   fallbackLine: string;
   /** The activity question Pip must end on; appended if the model left it out. */
   closingLine: string | null;
-  /** True after a wrong card: a sentence that praises the answer counts as a failed check. */
+  /** True after a wrong card, or in Support and Calm: a sentence that praises counts as a failed check. */
   forbidPraise: boolean;
   firstTokenTimeoutMs: number;
   /** Called once, when the first token arrives or the fallback takes over. */
@@ -48,6 +48,14 @@ function takeSentences(buffer: string): { sentences: string[]; rest: string } {
     rest = rest.slice(end);
   }
   return { sentences, rest };
+}
+
+/** A question that is not the next activity's prompt is an old one the model copied from history; it is dropped. */
+function isStaleQuestion(sentence: string, closingLine: string | null): boolean {
+  if (closingLine === null || !sentence.includes("?")) return false;
+  const said = sentence.toLowerCase();
+  const closing = closingLine.toLowerCase();
+  return !closing.includes(said) && !said.includes(closing);
 }
 
 function createLine(writer: Writer) {
@@ -93,6 +101,7 @@ export async function streamReply(args: StreamArgs): Promise<ReplyResult> {
     args.onFirstToken();
   };
   const accept = (sentence: string): boolean => {
+    if (isStaleQuestion(sentence, args.closingLine)) return true;
     if (args.forbidPraise && praisesAnswer(sentence)) return false;
     if (!outputGuard(`${out.text()} ${sentence}`).ok) return false;
     out.say(sentence);

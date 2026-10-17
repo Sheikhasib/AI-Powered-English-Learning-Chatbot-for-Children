@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getSkill } from "@/engine/curriculum";
 import { DISCLOSURE_SCRIPT } from "@/safety/lists";
 import type { TurnContext } from "@/server/repositories/context";
 import { failingModel, parseChunks, textModel } from "./mockModel";
@@ -103,6 +104,46 @@ describe("POST /api/chat", () => {
     expect(textOf(chunks)).toBe(turn.fallbackLine);
     expect(textOf(chunks)).not.toMatch(/great job/i);
     expect(mocks.persistTurn.mock.calls[0]?.[1]).toMatchObject({ fallback: true, correct: false, responseMs: 2000 });
+  });
+
+  it("ends a Support reply on the coping choice and drops the old praise and question", async () => {
+    mocks.model = textModel("Great job! Which one starts with duh? Do you want to breathe, or play a slow game?");
+    const { chunks } = await run({ kind: "mood", mood: "SAD" });
+    const turn = chunks.find((c) => c.type === "data-turn")?.data as { mode: string; activity: { prompt: string } };
+    expect(turn.mode).toBe("SUPPORT");
+    expect(textOf(chunks)).not.toMatch(/great job|duh/i);
+    expect(textOf(chunks).endsWith(turn.activity.prompt)).toBe(true);
+  });
+
+  it("keeps a comforting Support sentence but drops a copied quiz question", async () => {
+    mocks.model = textModel("I am right here with you. Which one starts with duh?");
+    const { chunks } = await run({ kind: "mood", mood: "SAD" });
+    const turn = chunks.find((c) => c.type === "data-turn")?.data as { activity: { prompt: string } };
+    expect(textOf(chunks)).toContain("I am right here with you.");
+    expect(textOf(chunks)).not.toContain("duh");
+    expect(textOf(chunks).endsWith(turn.activity.prompt)).toBe(true);
+  });
+
+  it("does not replay earlier quiz turns to the model in Support", async () => {
+    const quiz = { childInput: "[card] dog", botReply: "Great job! Which one starts with duh?", mode: "LEARN" as const, mood: null, activityId: null, correct: true, responseMs: 900, createdAt: new Date() };
+    mocks.loadTurnContext.mockResolvedValue({ ...context, turns: [quiz], turnCount: 1 });
+    const model = textModel("I am here with you.");
+    mocks.model = model;
+    await run({ kind: "mood", mood: "SAD" });
+    expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).not.toContain("duh");
+  });
+
+  it("ends the reply after a right card on the next activity's prompt, not the old one", async () => {
+    const item = getSkill("l2.animals")?.items[0];
+    const activityId = `l2.animals:listen-tap:${item?.id}`;
+    const previous = { childInput: "[card] x", botReply: "Which one starts with duh?", mode: "LEARN" as const, mood: null, activityId, correct: null, responseMs: null, createdAt: new Date() };
+    mocks.loadTurnContext.mockResolvedValue({ ...context, profile: { ...context.profile, level: 2 }, turns: [previous], turnCount: 1 });
+    mocks.model = textModel("Great job! Which one starts with duh?");
+    const { chunks } = await run({ kind: "card", activityId, choiceId: item?.id ?? "", responseMs: 2000 });
+    const turn = chunks.find((c) => c.type === "data-turn")?.data as { activity: { id: string; prompt: string; choices: { id: string }[] } };
+    expect(turn.activity.id).not.toBe(activityId);
+    expect(textOf(chunks)).not.toContain("duh");
+    expect(textOf(chunks).endsWith(turn.activity.prompt)).toBe(true);
   });
 
   it("streams the scripted line when the first token is late", async () => {

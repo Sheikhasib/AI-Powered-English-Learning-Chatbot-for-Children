@@ -90,10 +90,12 @@ export function composePrompt(
   decision: PromptDecision,
 ): { system: string; messages: PromptMessage[] } {
   const said = ctx.childText ? `The child said: "${quotable(ctx.childText)}"` : "The child tapped a card.";
+  // Replaying earlier quiz turns in Support and Calm makes the model repeat their praise and question.
+  const comforting = decision.mode === "SUPPORT" || decision.mode === "CALM";
   return {
     system: systemFor(decision),
     messages: [
-      ...historyMessages(ctx.history),
+      ...historyMessages(comforting ? [] : ctx.history),
       { role: "user", content: `${buildContextBlock(ctx)}\n\n${said}` },
     ],
   };
