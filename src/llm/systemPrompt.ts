@@ -16,6 +16,10 @@ export const PERSONA = [
 export const WRONG_ANSWER_RULE =
   "The answer was not right. Do not say great job, good job, well done, perfect, yay or that's right. Say it was a brave try.";
 
+/** Added whenever no card was answered correctly this turn, so a mood tap or chat is never praised as a right answer. */
+export const NO_PRAISE_RULE =
+  "There is nothing to praise yet. Do not say great job, good job, well done, perfect, yay or that's right, and do not mention tapping a card.";
+
 /** What each mode asks of Pip's voice; the engine, not the model, picks the mode. */
 export const MODE_POLICY: Record<Mode, string> = {
   LEARN: "Learn mode: be warm and brief, then go straight to the activity.",

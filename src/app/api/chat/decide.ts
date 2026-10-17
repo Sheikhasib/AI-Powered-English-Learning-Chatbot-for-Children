@@ -102,6 +102,12 @@ function eventFor(input: ChatInput, graded: GradedCard | null, levelUp: boolean)
   return "none";
 }
 
+/** Praise words are earned by a correct card; a mood tap, chat, a miss or any comforting mode never gets them. */
+function mayPraise(event: FallbackEvent, mode: Mode): boolean {
+  const earned = event === "correct" || event === "persisted" || event === "level-up";
+  return earned && mode !== "SUPPORT" && mode !== "CALM";
+}
+
 function starsEarned(input: ChatInput, graded: GradedCard | null): number {
   if (graded) return starsFor({ correct: graded.correct, afterMiss: graded.priorMisses > 0 });
   const spoke = input.kind === "text" || input.kind === "voice";
@@ -177,7 +183,7 @@ export function decideTurn(args: DecideArgs): Decision {
       levelUp: levelDecision.level === level ? null : { from: level, to: levelDecision.level },
       stars,
     },
-    prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input, decision.mode, decision.mood), closingLine: closing, wrongAnswer: event === "miss" },
+    prompt: { mode: decision.mode, mood: decision.mood, situation: situationFor(event, input, decision.mode, decision.mood), closingLine: closing, wrongAnswer: event === "miss", praiseAllowed: mayPraise(event, decision.mode) },
     scripted: redirect !== null,
     record: {
       childInput: redirect ? NOT_SAVED : storedInput(input, text),

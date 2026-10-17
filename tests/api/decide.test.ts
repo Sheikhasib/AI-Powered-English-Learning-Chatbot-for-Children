@@ -79,6 +79,19 @@ describe("decideTurn", () => {
     expect(decide(tap(target?.id ?? "")).prompt.wrongAnswer).toBe(false);
   });
 
+  it("allows praise words only after a card answered correctly", () => {
+    expect(decide(tap(target?.id ?? "")).prompt.praiseAllowed).toBe(true);
+    expect(decide(tap("other")).prompt.praiseAllowed).toBe(false);
+    expect(decide({ kind: "mood", mood: "HAPPY" }).prompt.praiseAllowed).toBe(false);
+    expect(decide({ kind: "text", text: "hello" }, context(), "hello").prompt.praiseAllowed).toBe(false);
+    expect(decide({ kind: "break" }).prompt.praiseAllowed).toBe(false);
+  });
+
+  it("never allows praise in Support", () => {
+    const sad = decide({ kind: "text", text: "I feel sad" }, context(), "I feel sad");
+    expect(sad.prompt.praiseAllowed).toBe(false);
+  });
+
   it("records how long the tap took", () => {
     expect(decide(tap("other")).record.responseMs).toBe(2000);
     expect(decide({ kind: "text", text: "hi" }, context(), "hi").record.responseMs).toBeNull();

@@ -1,5 +1,5 @@
 import type { AgeBand, Mode, Mood } from "@/types/domain";
-import { MODE_POLICY, PERSONA, WRONG_ANSWER_RULE } from "./systemPrompt";
+import { MODE_POLICY, NO_PRAISE_RULE, PERSONA, WRONG_ANSWER_RULE } from "./systemPrompt";
 
 /** The context block must stay under this many tokens (latency rule). */
 export const CONTEXT_TOKEN_BUDGET = 400;
@@ -38,6 +38,8 @@ export type PromptDecision = {
   closingLine: string | null;
   /** True after a card that was not right: the reply may not praise the answer. */
   wrongAnswer: boolean;
+  /** True only after a correct card answer outside Support and Calm; everywhere else praise words are banned. */
+  praiseAllowed: boolean;
 };
 
 export type PromptMessage = { role: "user" | "assistant"; content: string };
@@ -49,8 +51,13 @@ export function estimateTokens(text: string): number {
 
 const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 const ageText = (ageBand: AgeBand) => (ageBand === "AGE_3_4" ? "3 to 4" : "5 to 6");
-/** Straight quotes inside child text would break out of the quoting. */
-const quotable = (text: string) => text.replaceAll('"', "'");
+/** Quotes and line breaks inside child text would break out of the quoting or fake a context line. */
+const quotable = (text: string) =>
+  text
+    .replace(/[\p{Cc}\u2028\u2029]+/gu, " ")
+    .replace(/["“”]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** Facts about the child, kept short; the summary and skill titles are trimmed to hold the 400-token budget. */
 export function buildContextBlock(ctx: PromptContext): string {
@@ -72,6 +79,7 @@ function systemFor(decision: PromptDecision): string {
     `The child seems ${decision.mood.toLowerCase()}.`,
     decision.situation,
     decision.wrongAnswer ? WRONG_ANSWER_RULE : "",
+    decision.praiseAllowed || decision.wrongAnswer ? "" : NO_PRAISE_RULE,
     decision.closingLine ? `End with exactly this line: "${decision.closingLine}"` : "",
   ];
   return parts.filter(Boolean).join("\n");
@@ -80,7 +88,7 @@ function systemFor(decision: PromptDecision): string {
 function historyMessages(history: PromptContext["history"]): PromptMessage[] {
   return history.slice(-HISTORY_TURNS).flatMap((turn): PromptMessage[] => [
     { role: "user", content: clip(quotable(turn.child), HISTORY_LINE_MAX_CHARS) },
-    { role: "assistant", content: clip(turn.pip, HISTORY_LINE_MAX_CHARS) },
+    { role: "assistant", content: clip(quotable(turn.pip), HISTORY_LINE_MAX_CHARS) },
   ]);
 }
 

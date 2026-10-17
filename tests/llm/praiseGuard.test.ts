@@ -3,7 +3,7 @@ import { PRAISE_LINES } from "@/engine/sel/praise";
 import { praisesAnswer } from "@/llm/praiseGuard";
 
 describe("praisesAnswer", () => {
-  it.each(["Great job!", "Good job, Mia.", "Well done!", "Yay! You did it!", "That's right!", "Perfect!", "Super work!"])(
+  it.each(["Great job!", "Good job, Mia.", "Well done!", "Yay! You did it!", "That's right!", "Perfect!", "Super work!", "Great job tapping the card!", "I'm proud of you!", "You are so smart!"])(
     "catches %s",
     (line) => expect(praisesAnswer(line)).toBe(true),
   );
