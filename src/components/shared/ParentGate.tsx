@@ -5,29 +5,37 @@ import { motion } from "motion/react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { makeSum } from "./gateSum";
 
-const HOLD_MS = 1500;
+const HOLD_MS = 2000;
 
-type Sum = { a: number; b: number; options: number[] };
-
-/** Two-digit answers are out of a young child's reach, but easy for a grown-up. */
-function makeSum(): Sum {
-  const a = 6 + Math.floor(Math.random() * 4);
-  const b = 6 + Math.floor(Math.random() * 4);
-  const answer = a + b;
-  const options = [answer, answer + 2, answer - 2].sort(() => Math.random() - 0.5);
-  return { a, b, options };
-}
+type Challenge = { question: string; options: number[]; answer?: number; token?: string };
 
 type Props = {
   onPass: () => void;
   onClose: () => void;
+  /** Ask the server for the sum and let it set the signed cookie; without it the sum is checked here. */
+  server?: boolean;
 };
 
-/** Parental gate: press and hold, then solve a sum. Opens the grown-up parts of the app. */
-export function ParentGate({ onPass, onClose }: Props) {
+async function fetchChallenge(): Promise<Challenge | null> {
+  const response = await fetch("/parent-gate/challenge", { cache: "no-store" });
+  return response.ok ? ((await response.json()) as Challenge) : null;
+}
+
+async function verifyAnswer(token: string, answer: number): Promise<boolean> {
+  const response = await fetch("/parent-gate/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, answer }),
+  });
+  return response.ok;
+}
+
+/** Parental gate: press and hold for 2 seconds, then solve a sum written in words. */
+export function ParentGate({ onPass, onClose, server = false }: Props) {
   const reduced = useReducedMotion();
-  const [sum, setSum] = useState<Sum | null>(null);
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [missed, setMissed] = useState(false);
   const [holding, setHolding] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,11 +48,24 @@ export function ParentGate({ onPass, onClose }: Props) {
 
   const startHold = () => {
     setHolding(true);
-    timer.current = setTimeout(() => setSum(makeSum()), HOLD_MS);
+    timer.current = setTimeout(async () => {
+      setChallenge(server ? await fetchChallenge() : makeSum(Math.random));
+    }, HOLD_MS);
   };
   const stopHold = () => {
     setHolding(false);
     if (timer.current) clearTimeout(timer.current);
+  };
+
+  const choose = async (option: number) => {
+    if (!challenge) return;
+    const right = challenge.token
+      ? await verifyAnswer(challenge.token, option)
+      : option === challenge.answer;
+    if (right) return onPass();
+    // A fresh hold and a fresh sum make random tapping a poor strategy.
+    setChallenge(null);
+    setMissed(true);
   };
 
   return (
@@ -64,28 +85,21 @@ export function ParentGate({ onPass, onClose }: Props) {
           <X className="size-7" />
         </button>
         <h2 className="mb-2 text-heading font-bold">Grown-ups only</h2>
-        {sum ? (
+        {challenge ? (
           <>
-            <p className="mb-4 text-label">
-              {sum.a} + {sum.b} = ?
-            </p>
+            <p className="mb-4 text-label">{challenge.question}?</p>
             <div className="flex justify-center gap-4">
-              {sum.options.map((option) => (
-                <Button
-                  key={option}
-                  variant="outline"
-                  autoFocus={option === sum.options[0]}
-                  onClick={() => (option === sum.a + sum.b ? onPass() : setMissed(true))}
-                >
+              {challenge.options.map((option, index) => (
+                <Button key={option} variant="outline" autoFocus={index === 0} onClick={() => choose(option)}>
                   {option}
                 </Button>
               ))}
             </div>
-            {missed && <p className="mt-4 text-body text-muted-foreground">Not quite. Try again.</p>}
           </>
         ) : (
           <>
-            <p className="mb-4 text-body text-muted-foreground">Press and hold the button.</p>
+            {missed && <p className="mb-2 text-body text-muted-foreground">Not quite. Try again.</p>}
+            <p className="mb-4 text-body text-muted-foreground">Press and hold the button for two seconds.</p>
             <button
               type="button"
               autoFocus
