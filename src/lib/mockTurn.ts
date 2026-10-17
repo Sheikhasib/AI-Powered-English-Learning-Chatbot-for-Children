@@ -1,3 +1,4 @@
+import { breathingActivity, BREATHING_ACTIVITY_ID } from "@/components/buddy/breathing";
 import type { Activity } from "@/engine/curriculum/types";
 import type { Mode, Mood } from "@/types/domain";
 
@@ -180,6 +181,25 @@ export function createMockTurnSource(): TurnSource {
         activity: current,
         stars: 1,
         fallbackLine: `I love talking with you! ${current.prompt}`,
+      });
+    }
+
+    if (current.id === CALM_CHOICE.id && input.choiceId === "breathe") {
+      current = breathingActivity();
+      return turn({
+        reason: "chose breathing",
+        activity: current,
+        stars: 1,
+        fallbackLine: `Good choice. ${current.prompt}`,
+      });
+    }
+
+    if (current.id === BREATHING_ACTIVITY_ID && input.choiceId === "not-yet") {
+      current = CALM_CHOICE;
+      return turn({
+        reason: "not ready yet",
+        activity: current,
+        fallbackLine: `That's okay. ${current.prompt}`,
       });
     }
 

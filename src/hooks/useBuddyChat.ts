@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Activity } from "@/engine/curriculum/types";
+import { readyCheck } from "@/engine/sel/support";
 import { createMockTurnSource, type ChatInput, type TurnData } from "@/lib/mockTurn";
 import type { Mode, Mood } from "@/types/domain";
 
@@ -15,6 +16,7 @@ const RESTING_LINE = "Let me catch my breath!";
 /** Child-safety rule: suggest a break after 15 minutes, gently and without a countdown. */
 const BREAK_AFTER_MS = 15 * 60 * 1000;
 const REST_LINE = "We played a lot! Want a rest?";
+const BREATH_DONE_LINE = `Lovely breathing! ${readyCheck().line}`;
 
 export type BuddyStatus = "idle" | "thinking" | "ready" | "resting";
 /** `chosen` shows at once on tap, before the reply says right or try again. */
@@ -33,6 +35,8 @@ type BuddyState = {
   status: BuddyStatus;
   /** Set after 15 minutes; the break button glows until the child takes it. */
   restSuggested: boolean;
+  /** True once the child has finished the breathing bubble for the current turn. */
+  breathed: boolean;
 };
 
 const INITIAL: BuddyState = {
@@ -45,6 +49,7 @@ const INITIAL: BuddyState = {
   bursts: 0,
   status: "idle",
   restSuggested: false,
+  breathed: false,
 };
 
 /**
@@ -87,6 +92,7 @@ export function useBuddyChat() {
           pipLine: turn.fallbackLine,
           lineId: s.lineId + 1,
           mode: turn.mode,
+          breathed: false,
           status: "ready",
           stars: s.stars + turn.stars,
           bursts: turn.celebrate ? s.bursts + 1 : s.bursts,
@@ -161,5 +167,14 @@ export function useBuddyChat() {
     void send({ kind: "break" });
   }, [send]);
 
-  return { ...state, sendCard, sendText, sendMood, sendBreak };
+  /** Breathing is local: Pip just asks if the child is ready, and the ready cards appear. */
+  const finishBreathing = useCallback(
+    () =>
+      setState((s) =>
+        s.breathed ? s : { ...s, breathed: true, pipLine: BREATH_DONE_LINE, lineId: s.lineId + 1 },
+      ),
+    [],
+  );
+
+  return { ...state, sendCard, sendText, sendMood, sendBreak, finishBreathing };
 }

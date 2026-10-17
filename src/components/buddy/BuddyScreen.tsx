@@ -10,10 +10,9 @@ import { useProfiles } from "@/hooks/useProfiles";
 import { useSpeech, type SpokenWord } from "@/hooks/useSpeech";
 import type { Mode } from "@/types/domain";
 import { cn } from "@/lib/utils";
-import { CheckIn } from "./CheckIn";
+import { ActivityArea } from "./ActivityArea";
 import { MicButton } from "./MicButton";
 import { MoodBar } from "./MoodBar";
-import { PictureCards } from "./PictureCards";
 import { SpeechBubble } from "./SpeechBubble";
 import { StarBurst } from "./StarBurst";
 import { TopBar } from "./TopBar";
@@ -92,19 +91,16 @@ function BuddySession({ profile }: { profile: Profile }) {
         </section>
 
         <section className="flex flex-col gap-3">
-          {checkingIn ? (
-            <CheckIn locked={locked} onPick={chat.sendMood} />
-          ) : (
-            chat.activity && (
-              <PictureCards
-                activityId={chat.activity.id}
-                choices={chat.activity.choices}
-                locked={locked}
-                feedback={chat.feedback}
-                onPick={chat.sendCard}
-              />
-            )
-          )}
+          <ActivityArea
+            checkingIn={checkingIn}
+            activity={chat.activity}
+            locked={locked}
+            feedback={chat.feedback}
+            breathed={chat.breathed}
+            onMood={chat.sendMood}
+            onPick={chat.sendCard}
+            onBreathDone={chat.finishBreathing}
+          />
           <MoodBar
             onMood={chat.sendMood}
             onBreak={chat.sendBreak}
