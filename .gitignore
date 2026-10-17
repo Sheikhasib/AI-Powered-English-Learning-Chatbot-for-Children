@@ -4,8 +4,7 @@ node_modules/
 .next/
 out/
 # env
-.env
-.env*.local
+.env*
 !.env.example
 # vercel
 .vercel
@@ -13,6 +12,8 @@ out/
 coverage/
 playwright-report/
 test-results/
+# generated
+src/generated/
 # misc
 .DS_Store
 *.log
